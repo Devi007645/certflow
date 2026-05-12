@@ -266,7 +266,7 @@ function App() {
                   setActiveUser(null);
                   setScreen('landing');
                 }} className="hidden rounded-full px-4 py-2 text-sm font-black text-slate-700 hover:bg-white sm:inline-flex">Log out</button>
-                <button onClick={() => setScreen('signup')} className="rounded-full bg-[#3654ff] px-5 py-2.5 text-sm font-black text-white shadow-[4px_4px_0_#111827] transition hover:-translate-y-0.5">New Sign up</button>
+                <button onClick={() => setScreen('signup')} className="rounded-full bg-[#3654ff] px-5 py-2.5 text-sm font-black text-white shadow-[4px_4px_0_#111827] transition hover:-translate-y-0.5">Sign up</button>
               </>
             ) : (
               <>
@@ -882,7 +882,7 @@ const findBestMatch = (source: string, targets: string[]) => {
   // First try exact inclusion
   let match = targets.find(t => t.toLowerCase().includes(s) || s.includes(t.toLowerCase()));
   if (match) return match;
-  
+
   // Then try word overlap
   const words1 = s.split(/\s+/);
   let best = null;
@@ -944,7 +944,7 @@ function AddCertificationDialog({ form, setForm, error, onClose, onSubmit }: { f
                     const newTags = isSelected
                       ? form.tags.filter((t) => t !== trimmedTag)
                       : [...form.tags, trimmedTag];
-                    
+
                     let newTitle = form.title;
                     if (!isSelected) {
                       // Find similar course
@@ -955,14 +955,13 @@ function AddCertificationDialog({ form, setForm, error, onClose, onSubmit }: { f
                       const match = findBestMatch(trimmedTag, courses);
                       if (match === form.title) newTitle = '';
                     }
-                    
+
                     setForm({ ...form, tags: newTags, title: newTitle });
                   }}
-                  className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-bold border border-slate-950 transition-colors ${
-                    isSelected
+                  className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-bold border border-slate-950 transition-colors ${isSelected
                       ? 'bg-green-400 text-slate-950'
                       : 'bg-[#bfdbfe] text-slate-700 hover:bg-[#a5c4f7]'
-                  }`}
+                    }`}
                 >
                   {isSelected && <CheckCircle2 className="h-3 w-3 mr-1" />}
                   {trimmedTag}
