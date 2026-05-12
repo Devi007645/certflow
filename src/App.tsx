@@ -1,0 +1,862 @@
+import { useMemo, useState, useEffect, type ReactNode } from 'react'
+import { z } from 'zod'
+import {
+  BadgeCheck,
+  Bell,
+  CalendarDays,
+  CheckCircle2,
+  ChevronRight,
+  ClipboardCheck,
+  Download,
+  Eye,
+  EyeOff,
+  FileCheck2,
+  FileText,
+  FolderOpen,
+  KeyRound,
+  LayoutDashboard,
+  LockKeyhole,
+  LogIn,
+  MessageSquareText,
+  Plus,
+  Search,
+  ShieldCheck,
+  UploadCloud,
+  UserRound,
+  UsersRound,
+  X,
+} from 'lucide-react'
+import { supabase } from './supabase'
+import './App.css'
+
+type Role = 'user' | 'admin'
+type Screen = 'landing' | 'login' | 'signup' | 'user' | 'admin'
+
+type Profile = {
+  id: string
+  email: string
+  role: Role
+  name: string
+  department: string
+}
+
+type Certification = {
+  id: number
+  user_id: string
+  title: string
+  issuing_organization: string
+  issue_date: string
+  file_url: string
+  fileName: string
+  admin_review: string
+  created_at: string
+  probable_completion_time?: string
+  notes?: string
+}
+
+const adminUser: Profile = {
+  id: 'adm_1Root',
+  email: 'admin@certflow.app',
+  role: 'admin',
+  name: 'Avery Morgan',
+  department: 'People Operations',
+}
+
+const people: Record<string, Profile> = {
+  [adminUser.id]: adminUser,
+}
+
+const seededCertifications: Certification[] = []
+
+const certSchema = z.object({
+  title: z.string().min(3, 'Title must be at least 3 characters'),
+  issuing_organization: z.string().min(2, 'Organization is required'),
+  issue_date: z.string().min(1, 'Issue date is required'),
+  fileName: z.string().optional(),
+  probable_completion_time: z.string().optional(),
+})
+
+function App() {
+  const [screen, setScreen] = useState<Screen>('landing')
+  const [certifications, setCertifications] = useState<Certification[]>(seededCertifications)
+  const [peopleState, setPeopleState] = useState<Record<string, Profile>>(people)
+  const [activeUser, setActiveUser] = useState<Profile | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedCert, setSelectedCert] = useState<Certification | null>(null)
+  const [query, setQuery] = useState('')
+  const [reviewText, setReviewText] = useState('')
+  const [form, setForm] = useState<{
+    title: string;
+    issuing_organization: string;
+    issue_date: string;
+    fileName: string;
+    fileData?: string;
+    probable_completion_time?: string;
+  }>({ title: '', issuing_organization: '', issue_date: '', fileName: '', fileData: '', probable_completion_time: '' })
+  const [viewingCert, setViewingCert] = useState<Certification | null>(null)
+  const [formError, setFormError] = useState('')
+
+  useEffect(() => {
+    const fetchProfiles = async () => {
+      try {
+        const { data: employeesData, error: employeesError } = await supabase
+          .from('employees')
+          .select('*')
+        const { data: adminsData, error: adminsError } = await supabase
+          .from('admins')
+          .select('*')
+
+        if (employeesError) console.error("Error fetching employees:", employeesError)
+        if (adminsError) console.error("Error fetching admins:", adminsError)
+
+        const profilesMap: Record<string, Profile> = {}
+
+        if (employeesData) {
+          employeesData.forEach((profile: any) => {
+            profilesMap[profile.id] = {
+              id: profile.id,
+              email: profile.email,
+              role: 'user',
+              name: profile.name,
+              department: profile.department || 'General',
+            }
+          })
+        }
+
+        if (adminsData) {
+          adminsData.forEach((profile: any) => {
+            profilesMap[profile.id] = {
+              id: profile.id,
+              email: profile.email,
+              role: 'admin',
+              name: profile.name,
+              department: profile.department || 'General',
+            }
+          })
+        }
+
+        // Ensure default admin is always there
+        profilesMap[adminUser.id] = adminUser
+        setPeopleState(profilesMap)
+      } catch (err) {
+        console.error("Failed to fetch profiles:", err)
+      }
+    }
+    fetchProfiles()
+  }, [])
+
+  const myCertifications = activeUser ? certifications.filter((cert) => cert.user_id === activeUser.id) : []
+  const reviewedCount = certifications.filter((cert) => cert.admin_review).length
+  const pendingCount = certifications.length - reviewedCount
+
+  const filteredCertifications = useMemo(() => {
+    const normalized = query.toLowerCase().trim()
+    return certifications.filter((cert) => {
+      const person = peopleState[cert.user_id]
+      return [cert.title, cert.issuing_organization, person?.name, person?.email, person?.department, cert.admin_review]
+        .filter(Boolean)
+        .some((field) => field!.toLowerCase().includes(normalized))
+    })
+  }, [certifications, query, peopleState])
+
+  const openDashboard = (user: Profile) => {
+    setActiveUser(user)
+    setScreen(user.role === 'admin' ? 'admin' : 'user')
+  }
+
+  const handleLogin = (email: string) => {
+    if (email === adminUser.email) {
+      openDashboard(adminUser)
+      return null
+    }
+    const found = Object.values(peopleState).find(p => p.email === email)
+    if (found) {
+      openDashboard(found)
+      return null
+    }
+    return "User not found. Please sign up."
+  }
+
+  const handleSignup = async (user: Profile) => {
+    setPeopleState(prev => ({ ...prev, [user.id]: user }))
+    return null
+  }
+
+  const handleAddCertification = () => {
+    const parsed = certSchema.safeParse(form)
+    if (!parsed.success) {
+      setFormError(parsed.error.issues[0]?.message ?? 'Please check the form')
+      return
+    }
+
+    const newCertification: Certification = {
+      id: certifications.length > 0 ? Math.max(...certifications.map((cert) => cert.id)) + 1 : 1,
+      user_id: activeUser?.id ?? '',
+      title: form.title,
+      issuing_organization: form.issuing_organization,
+      issue_date: form.issue_date,
+      file_url: form.fileData || '',
+      fileName: form.fileName,
+      admin_review: '',
+      notes: '',
+      created_at: new Date().toISOString().slice(0, 10),
+      probable_completion_time: form.probable_completion_time,
+    }
+
+    setCertifications([newCertification, ...certifications])
+    setForm({ title: '', issuing_organization: '', issue_date: '', fileName: '', fileData: '', probable_completion_time: '' })
+    setFormError('')
+    setIsModalOpen(false)
+  }
+
+  const handleSaveReview = () => {
+    if (!selectedCert) return
+    setCertifications((items) =>
+      items.map((cert) => {
+        if (cert.id === selectedCert.id) {
+          if (activeUser?.role === 'admin') {
+            return { ...cert, admin_review: reviewText.trim() }
+          } else {
+            return { ...cert, notes: reviewText.trim() }
+          }
+        }
+        return cert
+      })
+    )
+    setSelectedCert(null)
+    setReviewText('')
+  }
+
+  return (
+    <main className="min-h-screen bg-[#f7f3ea] text-slate-950">
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute -left-32 top-16 h-72 w-72 rounded-full bg-[#f7c948]/30 blur-3xl" />
+        <div className="absolute right-0 top-0 h-[28rem] w-[28rem] rounded-full bg-[#3654ff]/15 blur-3xl" />
+        <div className="absolute bottom-0 left-1/2 h-80 w-80 rounded-full bg-[#ef6f6c]/20 blur-3xl" />
+      </div>
+
+      <header className="sticky top-0 z-40 border-b border-slate-900/10 bg-[#f7f3ea]/85 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+          <button onClick={() => setScreen('landing')} className="flex items-center gap-3">
+            <span className="grid h-12 w-12 place-items-center rounded-2xl bg-slate-950 text-[#f7c948] shadow-[6px_6px_0_#f7c948]">
+              <ShieldCheck className="h-6 w-6" />
+            </span>
+            <span className="text-left">
+              <span className="block text-xl font-black tracking-tight">CertFlow</span>
+              <span className="block text-xs font-semibold text-slate-500">Credential review workspace</span>
+            </span>
+          </button>
+          {activeUser && screen !== 'login' && screen !== 'signup' && (
+            <nav className="hidden items-center gap-2 rounded-full border border-slate-900/10 bg-white/70 p-1 shadow-sm md:flex">
+              {activeUser.role === 'user' && (
+                <button onClick={() => setScreen('user')} className="rounded-full px-4 py-2 text-sm font-bold hover:bg-slate-950 hover:text-white">My records</button>
+              )}
+              {activeUser.role === 'admin' && (
+                <button onClick={() => setScreen('admin')} className="rounded-full px-4 py-2 text-sm font-bold hover:bg-slate-950 hover:text-white">Review center</button>
+              )}
+            </nav>
+          )}
+          <div className="flex items-center gap-2">
+            {activeUser && screen !== 'login' && screen !== 'signup' ? (
+              <>
+                <button onClick={() => {
+                  setActiveUser(null);
+                  setScreen('landing');
+                }} className="hidden rounded-full px-4 py-2 text-sm font-black text-slate-700 hover:bg-white sm:inline-flex">Log out</button>
+                <button onClick={() => setScreen('signup')} className="rounded-full bg-[#3654ff] px-5 py-2.5 text-sm font-black text-white shadow-[4px_4px_0_#111827] transition hover:-translate-y-0.5">New Sign up</button>
+              </>
+            ) : (
+              <>
+                <button onClick={() => setScreen('login')} className="hidden rounded-full px-4 py-2 text-sm font-black text-slate-700 hover:bg-white sm:inline-flex">Login</button>
+                <button onClick={() => setScreen('signup')} className="rounded-full bg-[#3654ff] px-5 py-2.5 text-sm font-black text-white shadow-[4px_4px_0_#111827] transition hover:-translate-y-0.5">Sign up</button>
+              </>
+            )}
+          </div>
+        </div>
+      </header>
+
+      <div className="relative z-10">
+        {screen === 'landing' && <LandingPage onLogin={() => setScreen('login')} onSignup={() => setScreen('signup')} />}
+        {(screen === 'login' || screen === 'signup') && <AuthPanel mode={screen} onLogin={handleLogin} onSignup={handleSignup} onSwitchMode={(m) => setScreen(m)} />}
+        {screen === 'user' && activeUser && activeUser.role === 'user' && <UserDashboard user={activeUser} certifications={myCertifications} onAdd={() => setIsModalOpen(true)} onView={setViewingCert} />}
+        {screen === 'admin' && activeUser && activeUser.role === 'admin' && (
+          <AdminDashboard
+            admin={activeUser}
+            certifications={activeUser.role === 'admin' ? filteredCertifications : filteredCertifications.filter(c => c.user_id === activeUser.id)}
+            people={peopleState}
+            query={query}
+            setQuery={setQuery}
+            reviewedCount={reviewedCount}
+            pendingCount={pendingCount}
+            onReview={(cert) => {
+              setSelectedCert(cert)
+              setReviewText(activeUser.role === 'admin' ? cert.admin_review : (cert.notes || ''))
+            }}
+            onView={setViewingCert}
+          />
+        )}
+      </div>
+
+      {isModalOpen && (
+        <AddCertificationDialog
+          form={form}
+          setForm={setForm}
+          error={formError}
+          onClose={() => setIsModalOpen(false)}
+          onSubmit={handleAddCertification}
+        />
+      )}
+
+      {selectedCert && (
+        <ReviewDialog
+          cert={selectedCert}
+          reviewText={reviewText}
+          setReviewText={setReviewText}
+          onClose={() => setSelectedCert(null)}
+          onSave={handleSaveReview}
+          people={peopleState}
+          role={activeUser?.role}
+          onView={setViewingCert}
+        />
+      )}
+      {viewingCert && (
+        <DocumentViewer cert={viewingCert} onClose={() => setViewingCert(null)} />
+      )}
+    </main>
+  )
+}
+
+function LandingPage({ onLogin, onSignup }: { onLogin: () => void; onSignup: () => void }) {
+  return (
+    <section className="mx-auto flex max-w-4xl flex-col items-center justify-center gap-10 px-4 py-12 sm:px-6 lg:px-8 lg:py-24 text-center">
+      <div className="rounded-[2.5rem] border-2 border-slate-950 bg-[#fffaf0] p-8 shadow-[12px_12px_0_#111827] lg:p-12 w-full">
+        <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-slate-950 bg-[#f7c948] px-4 py-2 text-sm font-black mx-auto">
+          <BadgeCheck className="h-4 w-4" /> Simple certificate tracking for teams
+        </div>
+        <h1 className="mx-auto max-w-3xl text-5xl font-black leading-[0.95] tracking-tight sm:text-6xl lg:text-7xl">
+          Collect, review, and approve credentials in one clean place.
+        </h1>
+        <p className="mt-6 mx-auto max-w-2xl text-lg leading-8 text-slate-650">
+          A friendly certification portal where employees submit credentials and administrators keep every document organized, searchable, and review-ready.
+        </p>
+        <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+          <button onClick={onSignup} className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-2xl bg-[#3654ff] px-8 py-4 font-black text-white shadow-[5px_5px_0_#111827] transition hover:-translate-y-0.5">
+            Start now <ChevronRight className="h-5 w-5" />
+          </button>
+          <button onClick={onLogin} className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-2xl border-2 border-slate-950 bg-white px-8 py-4 font-black shadow-[5px_5px_0_#f7c948] transition hover:-translate-y-0.5">
+            <LogIn className="h-5 w-5" /> Login
+          </button>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function AuthPanel({ mode, onLogin, onSignup, onSwitchMode }: { mode: 'login' | 'signup'; onLogin: (email: string) => string | null; onSignup: (user: Profile) => Promise<string | null>; onSwitchMode: (mode: 'login' | 'signup') => void }) {
+  const [role, setRole] = useState<Role>('user')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [name, setName] = useState('')
+  const [department, setDepartment] = useState('')
+  const [secretCode, setSecretCode] = useState('')
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+
+  const passwordStrength = useMemo(() => {
+    let score = 0;
+    if (!password) return 0;
+    if (password.length > 6) score++;
+    if (password.length > 10) score++;
+    if (/[A-Z]/.test(password) && /[a-z]/.test(password)) score++;
+    if (/[0-9]/.test(password) || /[^A-Za-z0-9]/.test(password)) score++;
+    return score;
+  }, [password]);
+
+  const handleSubmit = async () => {
+    setError('')
+    setSuccess('')
+    if (!email) {
+      setError('Email is required')
+      return
+    }
+
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid enterprise email address')
+      return
+    }
+
+    if (mode === 'signup' && passwordStrength < 2) {
+      setError('Password is too weak')
+      return
+    }
+
+    if (mode === 'signup') {
+      if (!name) {
+        setError('Name is required')
+        return
+      }
+      if (role === 'admin' && secretCode !== 'KING123') {
+        setError('Invalid admin secret code')
+        return
+      }
+
+      const { data, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name: name,
+            department: department || 'General',
+            role: role,
+          }
+        }
+      })
+
+      if (authError) {
+        if (authError.message.includes('row-level security') || authError.message.includes('policy')) {
+          setError("We couldn't create your account due to a setup issue. Please contact support.")
+        } else {
+          setError(authError.message)
+        }
+        return
+      }
+
+      if (data.user) {
+        const newUser: Profile = {
+          id: data.user.id,
+          email,
+          role,
+          name,
+          department: department || 'General',
+        }
+        const err = await onSignup(newUser)
+        if (err) {
+          setError(err)
+        } else {
+          setEmail('')
+          setPassword('')
+          setName('')
+          setDepartment('')
+          setSecretCode('')
+          onSwitchMode('login')
+          setSuccess('Account created successfully. Please log in.')
+        }
+      }
+    } else {
+      if (email === 'admin@certflow.app') {
+        const err = onLogin(email)
+        if (err) setError(err)
+      } else {
+        const { data, error: authError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
+
+        if (authError) {
+          setError(authError.message)
+          return
+        }
+
+        if (data.user) {
+          const err = onLogin(email)
+          if (err) setError(err)
+        }
+      }
+    }
+  }
+
+  return (
+    <section className="mx-auto max-w-4xl px-4 py-14 sm:px-6 lg:px-8">
+      <div className="grid overflow-hidden rounded-[2.5rem] border-2 border-slate-950 bg-white shadow-[12px_12px_0_#111827] md:grid-cols-[0.8fr_1.2fr]">
+        <div className="bg-slate-950 p-8 text-white">
+          <div className="grid h-14 w-14 place-items-center rounded-2xl bg-[#f7c948] text-slate-950"><KeyRound /></div>
+          <h1 className="mt-8 text-4xl font-black capitalize">{mode}</h1>
+          <p className="mt-3 text-slate-300">
+            {mode === 'login' ? 'Welcome back! Sign in to continue.' : 'Create an account to start tracking credentials.'}
+          </p>
+          <div className="mt-8 space-y-3 text-sm text-slate-300">
+            <p className="flex gap-2"><CheckCircle2 className="h-5 w-5 text-[#f7c948]" /> Email and password access</p>
+            <p className="flex gap-2"><CheckCircle2 className="h-5 w-5 text-[#f7c948]" /> Separate user and admin journeys</p>
+            <p className="flex gap-2"><CheckCircle2 className="h-5 w-5 text-[#f7c948]" /> Review feedback saved per record</p>
+          </div>
+        </div>
+        <div className="p-8">
+          <div className="grid gap-5">
+            {success && <p className="rounded-2xl bg-green-100 px-4 py-3 text-sm font-black text-green-800">{success}</p>}
+            {error && <p className="rounded-2xl bg-red-100 px-4 py-3 text-sm font-black text-red-700">{error}</p>}
+
+            {mode === 'signup' && (
+              <>
+                <TextInput label="Full Name" value={name} onChange={setName} placeholder="e.g. Alex Morgan" />
+                <TextInput label="Department" value={department} onChange={setDepartment} placeholder="e.g. Engineering" />
+              </>
+            )}
+
+            <TextInput label="Email" value={email} onChange={setEmail} type="email" placeholder="e.g. email@example.com" />
+            <TextInput label="Password" value={password} onChange={setPassword} type="password" placeholder="••••••••••••" />
+
+            {mode === 'signup' && (
+              <div className="mt-1">
+                <div className="flex gap-1 h-1">
+                  {[1, 2, 3, 4].map((level) => (
+                    <div
+                      key={level}
+                      className={`h-full flex-1 rounded-full ${passwordStrength >= level
+                          ? level === 1
+                            ? 'bg-red-500'
+                            : level === 2
+                              ? 'bg-orange-500'
+                              : level === 3
+                                ? 'bg-yellow-500'
+                                : 'bg-green-500'
+                          : 'bg-slate-200'
+                        }`}
+                    />
+                  ))}
+                </div>
+                <div className="flex justify-between text-xs text-slate-500 mt-1">
+                  <span>Password Strength</span>
+                  <span className="font-bold">
+                    {passwordStrength === 0 && 'None'}
+                    {passwordStrength === 1 && 'Weak'}
+                    {passwordStrength === 2 && 'Fair'}
+                    {passwordStrength === 3 && 'Good'}
+                    {passwordStrength === 4 && 'Strong'}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {mode === 'signup' && (
+              <div>
+                <p className="mb-2 text-sm font-black uppercase tracking-wide text-slate-500">Account Type</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {(['user', 'admin'] as Role[]).map((item) => (
+                    <button key={item} onClick={() => setRole(item)} className={`rounded-2xl border-2 border-slate-950 px-4 py-4 font-black capitalize transition ${role === item ? 'bg-[#f7c948] shadow-[5px_5px_0_#111827]' : 'bg-[#f8fafc] hover:bg-white'}`}>
+                      {item}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {mode === 'signup' && role === 'admin' && (
+              <TextInput label="Admin Secret Code" value={secretCode} onChange={setSecretCode} type="password" placeholder="Enter code..." />
+            )}
+
+            <button onClick={handleSubmit} className="mt-2 rounded-2xl bg-[#3654ff] px-6 py-4 font-black text-white shadow-[6px_6px_0_#111827] transition hover:-translate-y-0.5">
+              {mode === 'login' ? 'Sign in' : 'Create account'}
+            </button>
+
+            <div className="text-center mt-2">
+              <button
+                onClick={() => onSwitchMode(mode === 'login' ? 'signup' : 'login')}
+                className="text-sm font-bold text-slate-500 hover:text-slate-950"
+              >
+                {mode === 'login' ? "Don't have an account? Sign up" : "Already have an account? Log in"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function UserDashboard({ user, certifications, onAdd, onView }: { user: Profile; certifications: Certification[]; onAdd: () => void; onView: (cert: Certification) => void }) {
+  return (
+    <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <DashboardHeader
+        icon={<LayoutDashboard />}
+        eyebrow="Employee workspace"
+        title={`Welcome back, ${user.name}`}
+        subtitle={`${user.department} · ${user.email}`}
+        action={<button onClick={onAdd} className="inline-flex items-center gap-2 rounded-2xl bg-[#3654ff] px-5 py-3 font-black text-white shadow-[5px_5px_0_#111827]"><Plus className="h-5 w-5" /> Add certificate</button>}
+      />
+      <div className="mt-8 grid gap-4 md:grid-cols-3">
+        <StatCard icon={<FileText />} label="My submissions" value={certifications.length.toString()} tone="bg-[#bfdbfe]" />
+        <StatCard icon={<CheckCircle2 />} label="Approved / reviewed" value={certifications.filter((cert) => cert.admin_review).length.toString()} tone="bg-[#d9f99d]" />
+        <StatCard icon={<CalendarDays />} label="Newest upload" value={certifications[0]?.created_at ?? 'None'} tone="bg-[#fecdd3]" />
+      </div>
+      <CertificationGrid certifications={certifications} onView={onView} />
+    </section>
+  )
+}
+
+function AdminDashboard({ admin, certifications, people, query, setQuery, reviewedCount, pendingCount, onReview, onView }: { admin: Profile; certifications: Certification[]; people: Record<string, Profile>; query: string; setQuery: (value: string) => void; reviewedCount: number; pendingCount: number; onReview: (cert: Certification) => void; onView: (cert: Certification) => void }) {
+  return (
+    <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <DashboardHeader
+        icon={<UsersRound />}
+        eyebrow="Admin review center"
+        title="Team certification queue"
+        subtitle={`${admin.name} · ${admin.department}`}
+        action={<div className="inline-flex items-center gap-2 rounded-2xl border-2 border-slate-950 bg-[#f7c948] px-5 py-3 font-black"><Bell className="h-5 w-5" /> {pendingCount} pending</div>}
+      />
+      <div className="mt-8 grid gap-4 md:grid-cols-3">
+        <StatCard icon={<FolderOpen />} label="Visible records" value={certifications.length.toString()} tone="bg-[#bfdbfe]" />
+        <StatCard icon={<MessageSquareText />} label="Reviews written" value={reviewedCount.toString()} tone="bg-[#d9f99d]" />
+        <StatCard icon={<UsersRound />} label="Total Users" value={Object.keys(people).length.toString()} tone="bg-[#fecdd3]" />
+      </div>
+      <div className="mt-8 rounded-[2.5rem] border-2 border-slate-950 bg-white p-5 shadow-[10px_10px_0_#3654ff]">
+        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-2xl font-black">Submissions</h2>
+            <p className="text-sm font-medium text-slate-500">Search by employee, department, certificate, issuer, or feedback.</p>
+          </div>
+          <div className="relative w-full sm:max-w-md">
+            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search records..." className="w-full rounded-2xl border-2 border-slate-200 bg-[#f8fafc] py-3 pl-12 pr-4 font-bold outline-none focus:border-[#3654ff]" />
+          </div>
+        </div>
+        <div className="grid gap-4">
+          {certifications.map((cert) => {
+            const person = people[cert.user_id]
+            return (
+              <article key={cert.id} className="grid gap-4 rounded-3xl border-2 border-slate-100 bg-[#f8fafc] p-4 lg:grid-cols-[1.2fr_1fr_auto] lg:items-center">
+                <div className="flex gap-3">
+                  <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-slate-950 text-white"><UserRound className="h-5 w-5" /></div>
+                  <div>
+                    <p className="font-black">{person?.name}</p>
+                    <p className="text-sm text-slate-500">{person?.department} · {person?.email}</p>
+                  </div>
+                </div>
+                <div>
+                  <p className="font-black">{cert.title}</p>
+                  <p className="text-sm text-slate-500">{cert.issuing_organization} · issued {cert.issue_date}</p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                  <StatusPill reviewed={Boolean(cert.admin_review)} delayed={cert.probable_completion_time ? new Date().toISOString().slice(0, 10) > cert.probable_completion_time : false} />
+                  {cert.fileName && (
+                    <button onClick={() => onView(cert)} className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-2 text-sm font-black text-slate-700">
+                      <Eye className="h-4 w-4" /> View
+                    </button>
+                  )}
+                  <button onClick={() => onReview(cert)} className="rounded-full bg-slate-950 px-4 py-2 text-sm font-black text-white">
+                    {admin.role === 'admin' ? 'Review' : 'Add Notes'}
+                  </button>
+                </div>
+              </article>
+            )
+          })}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function DashboardHeader({ icon, eyebrow, title, subtitle, action }: { icon: ReactNode; eyebrow: string; title: string; subtitle: string; action: ReactNode }) {
+  return (
+    <div className="rounded-[2.5rem] border-2 border-slate-950 bg-white p-6 shadow-[10px_10px_0_#111827]">
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-center gap-4">
+          <div className="grid h-16 w-16 place-items-center rounded-3xl bg-[#f7c948] text-slate-950">{icon}</div>
+          <div>
+            <p className="text-sm font-black uppercase tracking-wide text-[#3654ff]">{eyebrow}</p>
+            <h1 className="text-3xl font-black lg:text-4xl">{title}</h1>
+            <p className="mt-1 font-medium text-slate-500">{subtitle}</p>
+          </div>
+        </div>
+        {action}
+      </div>
+    </div>
+  )
+}
+
+function StatCard({ icon, label, value, tone }: { icon: ReactNode; label: string; value: string; tone: string }) {
+  return (
+    <div className={`${tone} rounded-[2rem] border-2 border-slate-950 p-5 shadow-[6px_6px_0_#111827]`}>
+      <div className="mb-4 grid h-11 w-11 place-items-center rounded-2xl bg-white">{icon}</div>
+      <p className="text-sm font-black uppercase tracking-wide text-slate-600">{label}</p>
+      <p className="text-3xl font-black">{value}</p>
+    </div>
+  )
+}
+
+function CertificationGrid({ certifications, onView }: { certifications: Certification[]; onView: (cert: Certification) => void }) {
+  return (
+    <div className="mt-8 grid gap-5 lg:grid-cols-2">
+      {certifications.map((cert) => (
+        <article key={cert.id} className="rounded-[2rem] border-2 border-slate-950 bg-white p-5 shadow-[8px_8px_0_#111827]">
+          <div className="mb-5 flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-black uppercase tracking-wide text-[#3654ff]">{cert.issuing_organization}</p>
+              <h3 className="mt-1 text-2xl font-black">{cert.title}</h3>
+            </div>
+            <StatusPill reviewed={Boolean(cert.admin_review)} delayed={cert.probable_completion_time ? new Date().toISOString().slice(0, 10) > cert.probable_completion_time : false} />
+          </div>
+          <div className="grid gap-3 text-sm font-bold text-slate-600 sm:grid-cols-2">
+            <p className="rounded-2xl bg-[#f8fafc] p-3">Issued: {cert.issue_date}</p>
+            <p className="rounded-2xl bg-[#f8fafc] p-3">Submitted: {cert.created_at}</p>
+          </div>
+          <div className="mt-5 flex flex-wrap gap-2">
+            {cert.fileName && (
+              <button onClick={() => onView(cert)} className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2 text-sm font-black text-white">
+                <Eye className="h-4 w-4" /> View
+              </button>
+            )}
+            {cert.admin_review ? <span className="rounded-full bg-[#d9f99d] px-4 py-2 text-sm font-black">{cert.admin_review}</span> : <span className="rounded-full bg-[#fef3c7] px-4 py-2 text-sm font-black">Awaiting admin feedback</span>}
+          </div>
+        </article>
+      ))}
+    </div>
+  )
+}
+
+function StatusPill({ reviewed, delayed }: { reviewed: boolean; delayed?: boolean }) {
+  if (delayed && !reviewed) {
+    return <span className="inline-flex w-fit rounded-full border-2 border-slate-950 px-3 py-1 text-xs font-black bg-red-400">Delayed</span>
+  }
+  return <span className={`inline-flex w-fit rounded-full border-2 border-slate-950 px-3 py-1 text-xs font-black ${reviewed ? 'bg-[#d9f99d]' : 'bg-[#f7c948]'}`}>{reviewed ? 'Reviewed' : 'Pending'}</span>
+}
+
+function AddCertificationDialog({ form, setForm, error, onClose, onSubmit }: { form: { title: string; issuing_organization: string; issue_date: string; fileName: string; fileData?: string; probable_completion_time?: string }; setForm: (value: { title: string; issuing_organization: string; issue_date: string; fileName: string; fileData?: string; probable_completion_time?: string }) => void; error: string; onClose: () => void; onSubmit: () => void }) {
+  return (
+    <Modal onClose={onClose} title="Add certification" icon={<UploadCloud />}>
+      <div className="space-y-4">
+        <TextInput label="Certification title" value={form.title} onChange={(value) => setForm({ ...form, title: value })} placeholder="e.g. CISSP" />
+        <TextInput label="Issuing organization" value={form.issuing_organization} onChange={(value) => setForm({ ...form, issuing_organization: value })} placeholder="e.g. ISC2" />
+        <TextInput label="Issue date" type="date" value={form.issue_date} onChange={(value) => setForm({ ...form, issue_date: value })} />
+        <TextInput label="Probable Completion Time" type="date" value={form.probable_completion_time || ''} onChange={(value) => setForm({ ...form, probable_completion_time: value })} />
+        <label className="block cursor-pointer rounded-3xl border-2 border-dashed border-slate-950 bg-[#bfdbfe] p-6 text-center transition hover:bg-[#dbeafe]">
+          <UploadCloud className="mx-auto mb-2 h-9 w-9" />
+          <span className="block font-black">{form.fileName || 'Choose PDF, DOC, or DOCX (Optional)'}</span>
+          <span className="mt-1 block text-sm font-semibold text-slate-600">Accepted document formats only</span>
+          <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) {
+              if (file.size > 5 * 1024 * 1024) {
+                alert('File size exceeds 5MB limit');
+                return;
+              }
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                setForm({ ...form, fileName: file.name, fileData: reader.result as string });
+              };
+              reader.readAsDataURL(file);
+            }
+          }} />
+        </label>
+        {error && <p className="rounded-2xl bg-red-100 px-4 py-3 text-sm font-black text-red-700">{error}</p>}
+        <button onClick={onSubmit} className="w-full rounded-2xl bg-[#3654ff] px-6 py-4 font-black text-white shadow-[5px_5px_0_#111827]">Submit certificate</button>
+      </div>
+    </Modal>
+  )
+}
+
+function ReviewDialog({ cert, reviewText, setReviewText, onClose, onSave, people, role, onView }: { cert: Certification; reviewText: string; setReviewText: (value: string) => void; onClose: () => void; onSave: () => void; people?: Record<string, Profile>; role?: Role; onView: (cert: Certification) => void }) {
+  const person = people ? people[cert.user_id] : null
+  const isAdmin = role === 'admin'
+  return (
+    <Modal onClose={onClose} title={isAdmin ? "Review submission" : "Add Notes"} icon={<ClipboardCheck />}>
+      <div className="space-y-4">
+        <div className="rounded-3xl bg-[#f8fafc] p-4">
+          <p className="font-black">{cert.title}</p>
+          <p className="text-sm font-medium text-slate-500">{person?.name} · {cert.issuing_organization}</p>
+          <button onClick={() => onView(cert)} className="mt-3 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-slate-950"><Eye className="h-4 w-4" /> View document</button>
+        </div>
+        {isAdmin ? (
+          <>
+            {cert.notes && (
+              <div className="rounded-2xl bg-[#fef3c7] p-4">
+                <p className="text-xs font-black uppercase text-slate-500">Employee Notes</p>
+                <p className="text-sm font-semibold mt-1">{cert.notes}</p>
+              </div>
+            )}
+            <label className="block text-sm font-black uppercase tracking-wide text-slate-500">Feedback (Admin)</label>
+            <textarea value={reviewText} onChange={(event) => setReviewText(event.target.value)} rows={5} className="w-full rounded-2xl border-2 border-slate-200 bg-white p-4 font-semibold outline-none focus:border-[#3654ff]" placeholder="Write approval notes or requested corrections..." />
+          </>
+        ) : (
+          <>
+            {cert.admin_review && (
+              <div className="rounded-2xl bg-[#d9f99d] p-4">
+                <p className="text-xs font-black uppercase text-slate-500">Admin Feedback</p>
+                <p className="text-sm font-semibold mt-1">{cert.admin_review}</p>
+              </div>
+            )}
+            <label className="block text-sm font-black uppercase tracking-wide text-slate-500">My Notes</label>
+            <textarea value={reviewText} onChange={(event) => setReviewText(event.target.value)} rows={5} className="w-full rounded-2xl border-2 border-slate-200 bg-white p-4 font-semibold outline-none focus:border-[#3654ff]" placeholder="Add notes to this certification..." />
+          </>
+        )}
+        <button onClick={onSave} className="w-full rounded-2xl bg-slate-950 px-6 py-4 font-black text-white shadow-[5px_5px_0_#f7c948]">
+          {isAdmin ? "Save feedback" : "Save notes"}
+        </button>
+      </div>
+    </Modal>
+  )
+}
+
+function TextInput({ label, value, onChange, placeholder, type = 'text' }: { label: string; value: string; onChange: (value: string) => void; placeholder?: string; type?: string }) {
+  const [showPassword, setShowPassword] = useState(false)
+  const isPassword = type === 'password'
+  const inputType = isPassword ? (showPassword ? 'text' : 'password') : type
+
+  return (
+    <label className="block text-sm font-black uppercase tracking-wide text-slate-500">
+      {label}
+      <div className="relative mt-2">
+        <input
+          type={inputType}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={placeholder}
+          className="w-full rounded-2xl border-2 border-slate-200 bg-[#f8fafc] px-4 py-3 font-semibold text-slate-950 outline-none focus:border-[#3654ff] pr-12"
+        />
+        {isPassword && (
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+          >
+            {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+          </button>
+        )}
+      </div>
+    </label>
+  )
+}
+
+function Modal({ title, icon, children, onClose }: { title: string; icon: ReactNode; children: ReactNode; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/70 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-xl rounded-[2.5rem] border-2 border-slate-950 bg-[#fffaf0] p-6 shadow-[12px_12px_0_#111827]">
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#f7c948]">{icon}</div>
+            <h2 className="text-2xl font-black">{title}</h2>
+          </div>
+          <button onClick={onClose} className="rounded-full bg-white p-2 text-slate-700 hover:bg-slate-950 hover:text-white"><X /></button>
+        </div>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function DocumentViewer({ cert, onClose }: { cert: Certification; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/70 p-4 backdrop-blur-sm">
+      <div className="relative w-full max-w-4xl h-[80vh] rounded-[2.5rem] border-2 border-slate-950 bg-[#fffaf0] p-6 shadow-[12px_12px_0_#111827] flex flex-col">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-2xl font-black">{cert.title}</h2>
+          <button onClick={onClose} className="rounded-full bg-white p-2 text-slate-700 hover:bg-slate-950 hover:text-white"><X /></button>
+        </div>
+        <div className="flex-1 bg-white rounded-2xl overflow-hidden border-2 border-slate-200">
+          {cert.file_url.startsWith('data:image/') ? (
+            <img src={cert.file_url} alt={cert.title} className="w-full h-full object-contain" />
+          ) : cert.file_url.startsWith('data:application/pdf') ? (
+            <iframe src={cert.file_url} title={cert.title} className="w-full h-full" />
+          ) : (
+            <div className="flex items-center justify-center h-full text-slate-500">
+              Preview not available for this file type.
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default App
+
