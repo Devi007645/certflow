@@ -877,7 +877,7 @@ const ORGANIZATION_DATA: Record<string, { courses: string[]; bestFor: string }> 
   }
 };
 
-function AddCertificationDialog({ form, setForm, error, onClose, onSubmit }: { form: { title: string; issuing_organization: string; issue_date: string; fileName: string; fileData?: string; probable_completion_time?: string }; setForm: (value: { title: string; issuing_organization: string; issue_date: string; fileName: string; fileData?: string; probable_completion_time?: string }) => void; error: string; onClose: () => void; onSubmit: () => void }) {
+function AddCertificationDialog({ form, setForm, error, onClose, onSubmit }: { form: { title: string; issuing_organization: string; issue_date: string; fileName: string; fileData?: string; probable_completion_time?: string; tags: string[] }; setForm: (value: { title: string; issuing_organization: string; issue_date: string; fileName: string; fileData?: string; probable_completion_time?: string; tags: string[] }) => void; error: string; onClose: () => void; onSubmit: () => void }) {
   const orgs = Object.keys(ORGANIZATION_DATA);
   const selectedOrg = form.issuing_organization;
   const courses = selectedOrg ? ORGANIZATION_DATA[selectedOrg]?.courses || [] : [];
