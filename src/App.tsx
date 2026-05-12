@@ -877,6 +877,27 @@ const ORGANIZATION_DATA: Record<string, { courses: string[]; bestFor: string }> 
   }
 };
 
+const findBestMatch = (source: string, targets: string[]) => {
+  const s = source.toLowerCase();
+  // First try exact inclusion
+  let match = targets.find(t => t.toLowerCase().includes(s) || s.includes(t.toLowerCase()));
+  if (match) return match;
+  
+  // Then try word overlap
+  const words1 = s.split(/\s+/);
+  let best = null;
+  let max = 0;
+  for (const t of targets) {
+    const words2 = t.toLowerCase().split(/\s+/);
+    const common = words1.filter(w => words2.includes(w));
+    if (common.length > max) {
+      max = common.length;
+      best = t;
+    }
+  }
+  return best;
+};
+
 function AddCertificationDialog({ form, setForm, error, onClose, onSubmit }: { form: { title: string; issuing_organization: string; issue_date: string; fileName: string; fileData?: string; probable_completion_time?: string; tags: string[] }; setForm: (value: { title: string; issuing_organization: string; issue_date: string; fileName: string; fileData?: string; probable_completion_time?: string; tags: string[] }) => void; error: string; onClose: () => void; onSubmit: () => void }) {
   const orgs = Object.keys(ORGANIZATION_DATA);
   const selectedOrg = form.issuing_organization;
@@ -923,7 +944,19 @@ function AddCertificationDialog({ form, setForm, error, onClose, onSubmit }: { f
                     const newTags = isSelected
                       ? form.tags.filter((t) => t !== trimmedTag)
                       : [...form.tags, trimmedTag];
-                    setForm({ ...form, tags: newTags });
+                    
+                    let newTitle = form.title;
+                    if (!isSelected) {
+                      // Find similar course
+                      const match = findBestMatch(trimmedTag, courses);
+                      if (match) newTitle = match;
+                    } else {
+                      // If deselecting, clear title if it was the match
+                      const match = findBestMatch(trimmedTag, courses);
+                      if (match === form.title) newTitle = '';
+                    }
+                    
+                    setForm({ ...form, tags: newTags, title: newTitle });
                   }}
                   className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-bold border border-slate-950 transition-colors ${
                     isSelected
@@ -945,7 +978,21 @@ function AddCertificationDialog({ form, setForm, error, onClose, onSubmit }: { f
           <div className="relative mt-2">
             <select
               value={form.title}
-              onChange={(event) => setForm({ ...form, title: event.target.value })}
+              onChange={(event) => {
+                const val = event.target.value;
+                const tagsList = bestFor.split(',').map(t => t.trim());
+                const match = findBestMatch(val, tagsList);
+                let newTags = form.tags;
+                if (val === '') {
+                  // If cleared, maybe clear tags?
+                  newTags = [];
+                } else if (match) {
+                  if (!newTags.includes(match)) {
+                    newTags = [...newTags, match];
+                  }
+                }
+                setForm({ ...form, title: val, tags: newTags });
+              }}
               className="w-full rounded-2xl border-2 border-slate-200 bg-[#f8fafc] px-4 py-3 font-semibold text-slate-950 outline-none focus:border-[#3654ff] appearance-none pr-12"
               disabled={!selectedOrg}
             >
