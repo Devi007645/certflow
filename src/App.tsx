@@ -52,6 +52,7 @@ type Certification = {
   created_at: string
   probable_completion_time?: string
   notes?: string
+  tags?: string[]
 }
 
 const adminUser: Profile = {
@@ -92,7 +93,8 @@ function App() {
     fileName: string;
     fileData?: string;
     probable_completion_time?: string;
-  }>({ title: '', issuing_organization: '', issue_date: '', fileName: '', fileData: '', probable_completion_time: '' })
+    tags: string[];
+  }>({ title: '', issuing_organization: '', issue_date: '', fileName: '', fileData: '', probable_completion_time: '', tags: [] })
   const [viewingCert, setViewingCert] = useState<Certification | null>(null)
   const [formError, setFormError] = useState('')
 
@@ -201,10 +203,11 @@ function App() {
       notes: '',
       created_at: new Date().toISOString().slice(0, 10),
       probable_completion_time: form.probable_completion_time,
+      tags: form.tags,
     }
 
     setCertifications([newCertification, ...certifications])
-    setForm({ title: '', issuing_organization: '', issue_date: '', fileName: '', fileData: '', probable_completion_time: '' })
+    setForm({ title: '', issuing_organization: '', issue_date: '', fileName: '', fileData: '', probable_completion_time: '', tags: [] })
     setFormError('')
     setIsModalOpen(false)
   }
@@ -625,6 +628,16 @@ function AdminDashboard({ admin, certifications, people, query, setQuery, review
                 <div>
                   <p className="font-black">{cert.title}</p>
                   <p className="text-sm text-slate-500">{cert.issuing_organization} · issued {cert.issue_date}</p>
+                  {cert.tags && cert.tags.length > 0 && (
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {cert.tags.map((tag) => (
+                        <span key={tag} className="inline-flex items-center rounded-full bg-green-100 px-2 py-1 text-xs font-bold text-green-800 border border-green-300">
+                          <CheckCircle2 className="h-3 w-3 mr-1" />
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-wrap items-center gap-2 lg:justify-end">
                   <StatusPill reviewed={Boolean(cert.admin_review)} delayed={cert.probable_completion_time ? new Date().toISOString().slice(0, 10) > cert.probable_completion_time : false} />
@@ -690,6 +703,16 @@ function CertificationGrid({ certifications, onView }: { certifications: Certifi
             <p className="rounded-2xl bg-[#f8fafc] p-3">Issued: {cert.issue_date}</p>
             <p className="rounded-2xl bg-[#f8fafc] p-3">Submitted: {cert.created_at}</p>
           </div>
+          {cert.tags && cert.tags.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-1">
+              {cert.tags.map((tag) => (
+                <span key={tag} className="inline-flex items-center rounded-full bg-green-100 px-2 py-1 text-xs font-bold text-green-800 border border-green-300">
+                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
           <div className="mt-5 flex flex-wrap gap-2">
             {cert.fileName && (
               <button onClick={() => onView(cert)} className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2 text-sm font-black text-white">
@@ -889,11 +912,30 @@ function AddCertificationDialog({ form, setForm, error, onClose, onSubmit }: { f
         {/* Display Best For tags if org selected */}
         {bestFor && (
           <div className="flex flex-wrap gap-1 mt-1">
-            {bestFor.split(',').map((tag) => (
-              <span key={tag} className="inline-flex items-center rounded-full bg-[#bfdbfe] px-2 py-1 text-xs font-bold text-slate-700 border border-slate-950">
-                {tag.trim()}
-              </span>
-            ))}
+            {bestFor.split(',').map((tag) => {
+              const trimmedTag = tag.trim();
+              const isSelected = form.tags.includes(trimmedTag);
+              return (
+                <button
+                  key={trimmedTag}
+                  type="button"
+                  onClick={() => {
+                    const newTags = isSelected
+                      ? form.tags.filter((t) => t !== trimmedTag)
+                      : [...form.tags, trimmedTag];
+                    setForm({ ...form, tags: newTags });
+                  }}
+                  className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-bold border border-slate-950 transition-colors ${
+                    isSelected
+                      ? 'bg-green-400 text-slate-950'
+                      : 'bg-[#bfdbfe] text-slate-700 hover:bg-[#a5c4f7]'
+                  }`}
+                >
+                  {isSelected && <CheckCircle2 className="h-3 w-3 mr-1" />}
+                  {trimmedTag}
+                </button>
+              );
+            })}
           </div>
         )}
 
