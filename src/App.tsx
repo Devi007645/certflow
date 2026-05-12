@@ -711,12 +711,213 @@ function StatusPill({ reviewed, delayed }: { reviewed: boolean; delayed?: boolea
   return <span className={`inline-flex w-fit rounded-full border-2 border-slate-950 px-3 py-1 text-xs font-black ${reviewed ? 'bg-[#d9f99d]' : 'bg-[#f7c948]'}`}>{reviewed ? 'Reviewed' : 'Pending'}</span>
 }
 
+const ORGANIZATION_DATA: Record<string, { courses: string[]; bestFor: string }> = {
+  "Anthropic Academy": {
+    courses: [
+      "Claude 101",
+      "Claude Code 101",
+      "Claude Code in Action",
+      "Building with the Claude API",
+      "Model Context Protocol (MCP) Fundamentals",
+      "Model Context Protocol: Advanced Topics",
+      "AI Fluency for Students",
+      "AI Fluency for Educators"
+    ],
+    bestFor: "Claude AI development, AI agents, MCP server development, Prompt engineering, AI-assisted coding"
+  },
+  "OpenAI Academy": {
+    courses: [
+      "Prompt Engineering Fundamentals",
+      "ChatGPT & Reasoning",
+      "Deep Research with ChatGPT",
+      "ChatGPT for Data Analysis",
+      "ChatGPT for Writing & Coding",
+      "Introduction to GPTs",
+      "Advanced Prompt Engineering",
+      "Multimodality Explained",
+      "OpenAI API Fundamentals",
+      "Building AI Agents with OpenAI SDK",
+      "Fine-tuning OpenAI Models",
+      "Realtime API Development"
+    ],
+    bestFor: "AI application development, GPT-based products, AI agents, API integration, Voice AI, Multimodal apps"
+  },
+  "Google AI & Google Cloud Skills Boost": {
+    courses: [
+      "Introduction to Generative AI",
+      "Introduction to Large Language Models",
+      "Introduction to Responsible AI",
+      "Gemini for Developers",
+      "Prompt Design in Vertex AI",
+      "Image Generation with AI",
+      "Generative AI Fundamentals",
+      "Generative AI Leader Certification",
+      "Build AI Apps with Gemini",
+      "Vertex AI Learning Path",
+      "AI Studio Fundamentals"
+    ],
+    bestFor: "Gemini AI, Vertex AI, Cloud AI engineering, Enterprise AI, Generative AI foundations"
+  },
+  "Microsoft Learn AI": {
+    courses: [
+      "AI-900: Azure AI Fundamentals",
+      "AI-102: Azure AI Engineer Associate",
+      "Generative AI with Azure OpenAI",
+      "Build AI Apps with Copilot",
+      "Azure Machine Learning Fundamentals",
+      "Responsible Generative AI"
+    ],
+    bestFor: "Enterprise AI, Azure AI, Copilot development, Cloud AI engineering"
+  },
+  "NVIDIA Deep Learning Institute (DLI)": {
+    courses: [
+      "Fundamentals of Deep Learning",
+      "Generative AI Explained",
+      "Building RAG Applications",
+      "AI Agent Development",
+      "CUDA for Deep Learning",
+      "LLM Optimization",
+      "Accelerated Computing with GPUs"
+    ],
+    bestFor: "Deep learning, GPU computing, AI infrastructure, LLM optimization"
+  },
+  "DeepLearning.AI": {
+    courses: [
+      "ChatGPT Prompt Engineering for Developers",
+      "AI Agents in LangGraph",
+      "Building Systems with ChatGPT API",
+      "LangChain for LLM Applications",
+      "Generative AI with LLMs",
+      "AI Python for Beginners",
+      "Multi AI Agent Systems"
+    ],
+    bestFor: "AI engineering, Prompt engineering, LLM apps, LangChain, AI agents"
+  },
+  "Hugging Face Courses": {
+    courses: [
+      "Transformers Course",
+      "NLP with Transformers",
+      "Diffusion Models",
+      "Open-source LLM Fine-tuning",
+      "AI Agents Course",
+      "Hugging Face Hub Fundamentals"
+    ],
+    bestFor: "Open-source AI, Transformers, NLP, Fine-tuning models"
+  },
+  "AWS Skill Builder AI Courses": {
+    courses: [
+      "AWS Certified AI Practitioner",
+      "Generative AI Essentials",
+      "Amazon Bedrock Fundamentals",
+      "Building AI Apps on AWS",
+      "Prompt Engineering with Bedrock"
+    ],
+    bestFor: "AWS AI stack, Bedrock, Cloud AI deployment"
+  },
+  "IBM SkillsBuild AI": {
+    courses: [
+      "AI Fundamentals",
+      "Generative AI Basics",
+      "AI Ethics",
+      "Watsonx Fundamentals",
+      "Machine Learning with Python"
+    ],
+    bestFor: "Enterprise AI, AI ethics, IBM Watson ecosystem"
+  },
+  "Meta AI Learning": {
+    courses: [
+      "Llama Model Development",
+      "Open-source AI",
+      "PyTorch Deep Learning",
+      "AI Research Workflows"
+    ],
+    bestFor: "Open-source LLMs, PyTorch, Research-focused AI"
+  },
+  "Databricks Academy": {
+    courses: [
+      "Generative AI Fundamentals",
+      "Machine Learning Professional",
+      "Mosaic AI",
+      "LLMOps"
+    ],
+    bestFor: "Data engineering + AI, Enterprise GenAI, LLMOps"
+  },
+  "Coursera AI Certifications": {
+    courses: [
+      "Google Generative AI Specialization",
+      "IBM AI Engineering",
+      "Deep Learning Specialization",
+      "Generative AI for Everyone",
+      "Machine Learning Specialization"
+    ],
+    bestFor: "Structured university-style learning, Recognized certifications"
+  }
+};
+
 function AddCertificationDialog({ form, setForm, error, onClose, onSubmit }: { form: { title: string; issuing_organization: string; issue_date: string; fileName: string; fileData?: string; probable_completion_time?: string }; setForm: (value: { title: string; issuing_organization: string; issue_date: string; fileName: string; fileData?: string; probable_completion_time?: string }) => void; error: string; onClose: () => void; onSubmit: () => void }) {
+  const orgs = Object.keys(ORGANIZATION_DATA);
+  const selectedOrg = form.issuing_organization;
+  const courses = selectedOrg ? ORGANIZATION_DATA[selectedOrg]?.courses || [] : [];
+  const bestFor = selectedOrg ? ORGANIZATION_DATA[selectedOrg]?.bestFor : '';
+
   return (
     <Modal onClose={onClose} title="Add certification" icon={<UploadCloud />}>
       <div className="space-y-4">
-        <TextInput label="Certification title" value={form.title} onChange={(value) => setForm({ ...form, title: value })} placeholder="e.g. CISSP" />
-        <TextInput label="Issuing organization" value={form.issuing_organization} onChange={(value) => setForm({ ...form, issuing_organization: value })} placeholder="e.g. ISC2" />
+        {/* Dropdown for Issuing Organization */}
+        <label className="block text-sm font-black uppercase tracking-wide text-slate-500">
+          Issuing organization
+          <div className="relative mt-2">
+            <select
+              value={form.issuing_organization}
+              onChange={(event) => {
+                const org = event.target.value;
+                setForm({ ...form, issuing_organization: org, title: '' }); // Reset title when org changes
+              }}
+              className="w-full rounded-2xl border-2 border-slate-200 bg-[#f8fafc] px-4 py-3 font-semibold text-slate-950 outline-none focus:border-[#3654ff] appearance-none pr-12"
+            >
+              <option value="">Select Organization</option>
+              {orgs.map((org) => (
+                <option key={org} value={org}>{org}</option>
+              ))}
+            </select>
+            <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
+              <ChevronRight className="h-5 w-5 rotate-90" />
+            </div>
+          </div>
+        </label>
+
+        {/* Display Best For tags if org selected */}
+        {bestFor && (
+          <div className="flex flex-wrap gap-1 mt-1">
+            {bestFor.split(',').map((tag) => (
+              <span key={tag} className="inline-flex items-center rounded-full bg-[#bfdbfe] px-2 py-1 text-xs font-bold text-slate-700 border border-slate-950">
+                {tag.trim()}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Dropdown for Certification Title */}
+        <label className="block text-sm font-black uppercase tracking-wide text-slate-500">
+          Certification title
+          <div className="relative mt-2">
+            <select
+              value={form.title}
+              onChange={(event) => setForm({ ...form, title: event.target.value })}
+              className="w-full rounded-2xl border-2 border-slate-200 bg-[#f8fafc] px-4 py-3 font-semibold text-slate-950 outline-none focus:border-[#3654ff] appearance-none pr-12"
+              disabled={!selectedOrg}
+            >
+              <option value="">Select Certificate</option>
+              {courses.map((course) => (
+                <option key={course} value={course}>{course}</option>
+              ))}
+            </select>
+            <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
+              <ChevronRight className="h-5 w-5 rotate-90" />
+            </div>
+          </div>
+        </label>
+
         <TextInput label="Issue date" type="date" value={form.issue_date} onChange={(value) => setForm({ ...form, issue_date: value })} />
         <TextInput label="Probable Completion Time" type="date" value={form.probable_completion_time || ''} onChange={(value) => setForm({ ...form, probable_completion_time: value })} />
         <label className="block cursor-pointer rounded-3xl border-2 border-dashed border-slate-950 bg-[#bfdbfe] p-6 text-center transition hover:bg-[#dbeafe]">
@@ -742,7 +943,7 @@ function AddCertificationDialog({ form, setForm, error, onClose, onSubmit }: { f
         <button onClick={onSubmit} className="w-full rounded-2xl bg-[#3654ff] px-6 py-4 font-black text-white shadow-[5px_5px_0_#111827]">Submit certificate</button>
       </div>
     </Modal>
-  )
+  );
 }
 
 function ReviewDialog({ cert, reviewText, setReviewText, onClose, onSave, people, role, onView }: { cert: Certification; reviewText: string; setReviewText: (value: string) => void; onClose: () => void; onSave: () => void; people?: Record<string, Profile>; role?: Role; onView: (cert: Certification) => void }) {
