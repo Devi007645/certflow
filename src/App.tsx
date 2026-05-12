@@ -503,14 +503,14 @@ function AuthPanel({ mode, onLogin, onSignup, onSwitchMode }: { mode: 'login' | 
                     <div
                       key={level}
                       className={`h-full flex-1 rounded-full ${passwordStrength >= level
-                          ? level === 1
-                            ? 'bg-red-500'
-                            : level === 2
-                              ? 'bg-orange-500'
-                              : level === 3
-                                ? 'bg-yellow-500'
-                                : 'bg-green-500'
-                          : 'bg-slate-200'
+                        ? level === 1
+                          ? 'bg-red-500'
+                          : level === 2
+                            ? 'bg-orange-500'
+                            : level === 3
+                              ? 'bg-yellow-500'
+                              : 'bg-green-500'
+                        : 'bg-slate-200'
                         }`}
                     />
                   ))}
@@ -721,9 +721,9 @@ function AddCertificationDialog({ form, setForm, error, onClose, onSubmit }: { f
         <TextInput label="Probable Completion Time" type="date" value={form.probable_completion_time || ''} onChange={(value) => setForm({ ...form, probable_completion_time: value })} />
         <label className="block cursor-pointer rounded-3xl border-2 border-dashed border-slate-950 bg-[#bfdbfe] p-6 text-center transition hover:bg-[#dbeafe]">
           <UploadCloud className="mx-auto mb-2 h-9 w-9" />
-          <span className="block font-black">{form.fileName || 'Choose PDF, DOC, or DOCX (Optional)'}</span>
-          <span className="mt-1 block text-sm font-semibold text-slate-600">Accepted document formats only</span>
-          <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={(event) => {
+          <span className="block font-black">{form.fileName || 'Choose PDF (Optional)'}</span>
+          <span className="mt-1 block text-sm font-semibold text-slate-600">Accepted PDF document formats only</span>
+          <input type="file" accept=".pdf" className="hidden" onChange={(event) => {
             const file = event.target.files?.[0];
             if (file) {
               if (file.size > 5 * 1024 * 1024) {
