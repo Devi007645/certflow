@@ -322,8 +322,8 @@ function App() {
 
       <header className="sticky top-0 z-40 border-b border-slate-900/10 bg-[#f7f3ea]/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-              <div className="flex items-center gap-3">
-                <svg width="48" height="48" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
+              <div className="flex items-center gap-4">
+                <svg width="64" height="64" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
                   <defs>
                     <linearGradient id="brandGradient" x1="0%" y1="0%" x2="0%" y2="100%">
                       <stop offset="0%" stopColor="#38bdf8" />
@@ -340,11 +340,11 @@ function App() {
                   <path d="M40 45 L47 52 L62 35" stroke="white" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
                 <span className="text-left">
-                  <span className="block text-xl font-black tracking-tight flex items-center">
+                  <span className="block text-3xl font-black tracking-tight flex items-center">
                     <span className="text-transparent bg-clip-text bg-gradient-to-br from-[#38bdf8] to-[#7c3aed]">P</span>
                     <span>roofly</span>
                   </span>
-                  <span className="block text-xs font-semibold text-slate-500">Credential review workspace</span>
+                  <span className="block text-sm font-semibold text-slate-500">Credential review workspace</span>
                 </span>
                 
                 {/* Status Indicators */}
