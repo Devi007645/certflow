@@ -451,7 +451,7 @@ function App() {
         {screen === 'admin' && activeUser && activeUser.role === 'admin' && (
           <AdminDashboard
             admin={activeUser}
-            certifications={filteredCertifications}
+            certifications={certifications}
             people={peopleState}
             query={query}
             setQuery={setQuery}
