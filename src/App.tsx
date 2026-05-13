@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, type ReactNode } from 'react'
+import { useMemo, useState, useEffect, useCallback, type ReactNode } from 'react'
 import { z } from 'zod'
 import {
   BadgeCheck,
@@ -155,7 +155,7 @@ function App() {
     }
   }, [])
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const { data: employeesData, error: employeesError } = await supabase
         .from('employees')
@@ -200,7 +200,7 @@ function App() {
     } catch (err) {
       console.error("Failed to fetch data:", err)
     }
-  }
+  }, [])
 
   useEffect(() => {
     fetchData()
@@ -220,7 +220,11 @@ function App() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [])
+  }, [fetchData])
+
+  useEffect(() => {
+    fetchData()
+  }, [certifications, fetchData])
 
   const handleRefresh = async () => {
     await refetch()
@@ -346,7 +350,7 @@ function App() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f3ea] text-slate-950">
+    <main className="h-screen bg-[#f7f3ea] text-slate-950 overflow-y-auto">
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -left-32 top-16 h-72 w-72 rounded-full bg-[#f7c948]/30 blur-3xl" />
         <div className="absolute right-0 top-0 h-[28rem] w-[28rem] rounded-full bg-[#3654ff]/15 blur-3xl" />
@@ -658,7 +662,7 @@ function AuthPanel({ mode, onLogin, onSignup, onSwitchMode }: { mode: 'login' | 
   }
 
   return (
-    <section className="mx-auto max-w-4xl px-4 py-14 sm:px-6 lg:px-8">
+    <section className="mx-auto max-w-4xl px-4 py-6 sm:py-14 sm:px-6 lg:px-8">
       <div className="grid overflow-hidden rounded-[2.5rem] border-2 border-slate-950 bg-white shadow-[12px_12px_0_#111827] md:grid-cols-[0.8fr_1.2fr]">
         <div className="bg-slate-950 p-8 text-white">
           <div className="grid h-14 w-14 place-items-center rounded-2xl bg-[#f7c948] text-slate-950"><KeyRound /></div>
@@ -672,7 +676,7 @@ function AuthPanel({ mode, onLogin, onSignup, onSwitchMode }: { mode: 'login' | 
             <p className="flex gap-2"><CheckCircle2 className="h-5 w-5 text-[#f7c948]" /> Review feedback saved per record</p>
           </div>
         </div>
-        <div className="p-8">
+        <div className="p-6 sm:p-8">
           <div className="grid gap-5">
             {success && <p className="rounded-2xl bg-green-100 px-4 py-3 text-sm font-black text-green-800">{success}</p>}
             {error && <p className="rounded-2xl bg-red-100 px-4 py-3 text-sm font-black text-red-700">{error}</p>}
