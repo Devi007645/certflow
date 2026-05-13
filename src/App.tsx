@@ -553,7 +553,6 @@ function AuthPanel({ mode, onLogin, onSignup, onSwitchMode }: { mode: 'login' | 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
-  const [department, setDepartment] = useState('')
   const [secretCode, setSecretCode] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -603,7 +602,7 @@ function AuthPanel({ mode, onLogin, onSignup, onSwitchMode }: { mode: 'login' | 
         options: {
           data: {
             name: name,
-            department: department || 'General',
+            department: 'General',
             role: role,
           }
         }
@@ -624,7 +623,7 @@ function AuthPanel({ mode, onLogin, onSignup, onSwitchMode }: { mode: 'login' | 
           email,
           role,
           name,
-          department: department || 'General',
+          department: 'General',
         }
         const err = await onSignup(newUser)
         if (err) {
@@ -633,7 +632,6 @@ function AuthPanel({ mode, onLogin, onSignup, onSwitchMode }: { mode: 'login' | 
           setEmail('')
           setPassword('')
           setName('')
-          setDepartment('')
           setSecretCode('')
           onSwitchMode('login')
           setSuccess('Account created successfully. Please log in.')
@@ -683,10 +681,7 @@ function AuthPanel({ mode, onLogin, onSignup, onSwitchMode }: { mode: 'login' | 
             {error && <p className="rounded-2xl bg-red-100 px-4 py-3 text-sm font-black text-red-700">{error}</p>}
 
             {mode === 'signup' && (
-              <>
-                <TextInput label="Full Name" value={name} onChange={setName} placeholder="e.g. Alex Morgan" />
-                <TextInput label="Department" value={department} onChange={setDepartment} placeholder="e.g. Engineering" />
-              </>
+              <TextInput label="Full Name" value={name} onChange={setName} placeholder="e.g. Alex Morgan" />
             )}
 
             <TextInput label="Email" value={email} onChange={setEmail} type="email" placeholder="e.g. email@example.com" />
