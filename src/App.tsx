@@ -26,7 +26,11 @@ import {
   UsersRound,
   X,
 } from 'lucide-react'
-import { supabase } from './supabase'
+import { supabase } from './lib/supabase'
+import { useFormStore } from './store/useFormStore'
+import { useRealtimeForm } from './hooks/useRealtimeForm'
+import { useCertifications, useCreateCertification, useUpdateCertification } from './queries/useCertifications'
+import { useRealtimeSync } from './hooks/useRealtimeSync'
 import './App.css'
 
 type Role = 'user' | 'admin'
@@ -79,24 +83,37 @@ const certSchema = z.object({
 
 function App() {
   const [screen, setScreen] = useState<Screen>('landing')
-  const [certifications, setCertifications] = useState<Certification[]>(seededCertifications)
+  const { data: certifications = [] } = useCertifications()
+  const createCertificationMutation = useCreateCertification()
+  const updateCertificationMutation = useUpdateCertification()
   const [peopleState, setPeopleState] = useState<Record<string, Profile>>(people)
   const [activeUser, setActiveUser] = useState<Profile | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedCert, setSelectedCert] = useState<Certification | null>(null)
   const [query, setQuery] = useState('')
   const [reviewText, setReviewText] = useState('')
-  const [form, setForm] = useState<{
-    title: string;
-    issuing_organization: string;
-    issue_date: string;
-    fileName: string;
-    fileData?: string;
-    probable_completion_time?: string;
-    tags: string[];
-  }>({ title: '', issuing_organization: '', issue_date: '', fileName: '', fileData: '', probable_completion_time: '', tags: [] })
+  
+  const { form, updateForm: setForm } = useRealtimeForm(activeUser?.id)
+  const saveStatus = useFormStore((state) => state.saveStatus)
+  const resetForm = useFormStore((state) => state.resetForm)
+  
   const [viewingCert, setViewingCert] = useState<Certification | null>(null)
   const [formError, setFormError] = useState('')
+  
+  // Initialize realtime sync
+  useRealtimeSync()
+
+  const [isOnline, setIsOnline] = useState(navigator.onLine)
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true)
+    const handleOffline = () => setIsOnline(false)
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -107,14 +124,9 @@ function App() {
         const { data: adminsData, error: adminsError } = await supabase
           .from('admins')
           .select('*')
-        const { data: certsData, error: certsError } = await supabase
-          .from('certifications')
-          .select('*')
-          .order('created_at', { ascending: false })
 
         if (employeesError) console.error("Error fetching employees:", employeesError)
         if (adminsError) console.error("Error fetching admins:", adminsError)
-        if (certsError) console.error("Error fetching certifications:", certsError)
 
         const profilesMap: Record<string, Profile> = {}
 
@@ -146,9 +158,6 @@ function App() {
         profilesMap[adminUser.id] = adminUser
         setPeopleState(profilesMap)
 
-        if (certsData) {
-          setCertifications(certsData)
-        }
       } catch (err) {
         console.error("Failed to fetch data:", err)
       }
@@ -213,22 +222,14 @@ function App() {
       tags: form.tags,
     }
 
-    const { data, error } = await supabase
-      .from('certifications')
-      .insert([newCertData])
-      .select()
-
-    if (error) {
+    try {
+      await createCertificationMutation.mutateAsync(newCertData)
+      resetForm()
+      setFormError('')
+      setIsModalOpen(false)
+    } catch (error: any) {
       setFormError(error.message)
-      return
     }
-
-    if (data) {
-      setCertifications([data[0], ...certifications])
-    }
-    setForm({ title: '', issuing_organization: '', issue_date: '', fileName: '', fileData: '', probable_completion_time: '', tags: [] })
-    setFormError('')
-    setIsModalOpen(false)
   }
 
   const handleSaveReview = async () => {
@@ -241,62 +242,29 @@ function App() {
       updates.notes = reviewText.trim()
     }
 
-    const { error } = await supabase
-      .from('certifications')
-      .update(updates)
-      .eq('id', selectedCert.id)
-
-    if (error) {
+    try {
+      await updateCertificationMutation.mutateAsync({ id: selectedCert.id, ...updates })
+      setSelectedCert(null)
+      setReviewText('')
+    } catch (error) {
       console.error("Error updating review:", error)
-      return
     }
-
-    setCertifications((items) =>
-      items.map((cert) => {
-        if (cert.id === selectedCert.id) {
-          return { ...cert, ...updates }
-        }
-        return cert
-      })
-    )
-    setSelectedCert(null)
-    setReviewText('')
   }
 
   const handleUploadDocument = async (certId: number, fileName: string, fileData: string) => {
-    const { error } = await supabase
-      .from('certifications')
-      .update({ fileName, file_url: fileData })
-      .eq('id', certId)
-
-    if (error) {
+    try {
+      await updateCertificationMutation.mutateAsync({ id: certId, fileName, file_url: fileData })
+    } catch (error) {
       console.error("Error uploading document:", error)
-      return
     }
-
-    setCertifications(items =>
-      items.map(cert =>
-        cert.id === certId ? { ...cert, fileName, file_url: fileData } : cert
-      )
-    )
   }
 
   const handleRemoveDocument = async (certId: number) => {
-    const { error } = await supabase
-      .from('certifications')
-      .update({ fileName: '', file_url: '' })
-      .eq('id', certId)
-
-    if (error) {
+    try {
+      await updateCertificationMutation.mutateAsync({ id: certId, fileName: '', file_url: '' })
+    } catch (error) {
       console.error("Error removing document:", error)
-      return
     }
-
-    setCertifications(items =>
-      items.map(cert =>
-        cert.id === certId ? { ...cert, fileName: '', file_url: '' } : cert
-      )
-    )
   }
 
   return (
@@ -317,6 +285,35 @@ function App() {
                   <span className="block text-xl font-black tracking-tight">CertFlow</span>
                   <span className="block text-xs font-semibold text-slate-500">Credential review workspace</span>
                 </span>
+                
+                {/* Status Indicators */}
+                <div className="ml-4 flex items-center gap-2 text-xs font-bold">
+                  {!isOnline && (
+                    <span className="rounded-full bg-red-100 px-2 py-1 text-red-700 border border-red-300 flex items-center gap-1">
+                      <EyeOff className="h-3 w-3" /> Offline
+                    </span>
+                  )}
+                  {isOnline && (
+                    <span className="rounded-full bg-green-100 px-2 py-1 text-green-700 border border-green-300 flex items-center gap-1">
+                      <ShieldCheck className="h-3 w-3" /> Online
+                    </span>
+                  )}
+                  {saveStatus === 'saving' && (
+                    <span className="rounded-full bg-yellow-100 px-2 py-1 text-yellow-700 border border-yellow-300 flex items-center gap-1">
+                      <UploadCloud className="h-3 w-3 animate-pulse" /> Saving...
+                    </span>
+                  )}
+                  {saveStatus === 'saved' && (
+                    <span className="rounded-full bg-blue-100 px-2 py-1 text-blue-700 border border-blue-300 flex items-center gap-1">
+                      <CheckCircle2 className="h-3 w-3" /> Saved
+                    </span>
+                  )}
+                  {saveStatus === 'error' && (
+                    <span className="rounded-full bg-red-100 px-2 py-1 text-red-700 border border-red-300 flex items-center gap-1">
+                      <X className="h-3 w-3" /> Save Error
+                    </span>
+                  )}
+                </div>
               </div>
           {activeUser && screen !== 'login' && screen !== 'signup' && (
             <nav className="hidden items-center gap-2 rounded-full border border-slate-900/10 bg-white/70 p-1 shadow-sm md:flex">
