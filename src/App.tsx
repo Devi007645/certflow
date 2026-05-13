@@ -23,7 +23,6 @@ import {
   Search,
   ShieldCheck,
   UploadCloud,
-  UserRound,
   UsersRound,
   X,
   Trash2,
@@ -819,7 +818,7 @@ function AdminDashboard({ admin, certifications, people, query, setQuery, review
         <StatCard icon={<MessageSquareText />} label="Reviews written" value={reviewedCount.toString()} tone="bg-[#d9f99d]" />
         <StatCard icon={<UsersRound />} label="Total Users" value={Object.values(people).filter(p => p.role === 'user').length.toString()} tone="bg-[#fecdd3]" />
       </div>
-      <div className="mt-8 rounded-[2.5rem] border-2 border-slate-950 bg-white p-5 shadow-[10px_10px_0_#3654ff]">
+      <div className="mt-8 rounded-[2.5rem] border-2 border-slate-950 bg-white p-5 pl-8 shadow-[10px_10px_0_#3654ff]">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-2xl font-black">Submissions</h2>
@@ -836,7 +835,7 @@ function AdminDashboard({ admin, certifications, people, query, setQuery, review
             return (
               <div key={userId} className="rounded-3xl border-2 border-slate-200 bg-[#f8fafc] p-5">
                 <div className="flex gap-3 mb-4 items-center">
-                  <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-slate-950 text-white"><UserRound className="h-5 w-5" /></div>
+                  <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-slate-950 text-white font-black text-xl">{person?.name?.[0]?.toUpperCase() || '?'}</div>
                   <div>
                     <p className="font-black text-lg">{person?.name || 'Unknown User'}</p>
                     <p className="text-sm text-slate-500">{person?.department} · {person?.email}</p>
@@ -1378,8 +1377,19 @@ function AddCertificationDialog({ form, setForm, error, onClose, onSubmit, isEdi
           </div>
         </label>
 
-        <TextInput label="Issue date" type="date" value={form.issue_date} onChange={(value) => setForm({ ...form, issue_date: value })} />
-        <TextInput label="Probable Completion Time" type="date" value={form.probable_completion_time || ''} onChange={(value) => setForm({ ...form, probable_completion_time: value })} />
+        <TextInput 
+          label="Issue date" 
+          type="date" 
+          value={form.issue_date} 
+          onChange={(value) => {
+            const updates = { ...form, issue_date: value };
+            if (form.probable_completion_time && form.probable_completion_time < value) {
+              updates.probable_completion_time = value;
+            }
+            setForm(updates);
+          }} 
+        />
+        <TextInput label="Probable Completion Time" type="date" value={form.probable_completion_time || ''} onChange={(value) => setForm({ ...form, probable_completion_time: value })} min={form.issue_date} />
         <label className="block cursor-pointer rounded-3xl border-2 border-dashed border-slate-950 bg-[#bfdbfe] p-6 text-center transition hover:bg-[#dbeafe]">
           <UploadCloud className="mx-auto mb-2 h-9 w-9" />
           <span className="block font-black">{form.fileName || 'Choose PDF (Optional)'}</span>
@@ -1468,7 +1478,7 @@ function ReviewDialog({ cert, reviewText, setReviewText, onClose, onSave, people
   )
 }
 
-function TextInput({ label, value, onChange, placeholder, type = 'text' }: { label: string; value: string; onChange: (value: string) => void; placeholder?: string; type?: string }) {
+function TextInput({ label, value, onChange, placeholder, type = 'text', min }: { label: string; value: string; onChange: (value: string) => void; placeholder?: string; type?: string; min?: string }) {
   const [showPassword, setShowPassword] = useState(false)
   const isPassword = type === 'password'
   const inputType = isPassword ? (showPassword ? 'text' : 'password') : type
@@ -1482,6 +1492,7 @@ function TextInput({ label, value, onChange, placeholder, type = 'text' }: { lab
           value={value}
           onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
+          min={min}
           className="w-full rounded-2xl border-2 border-slate-200 bg-[#f8fafc] px-4 py-3 font-semibold text-slate-950 outline-none focus:border-[#3654ff] pr-12"
         />
         {isPassword && (
