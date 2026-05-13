@@ -433,7 +433,7 @@ function App() {
 
       <div className="relative z-10">
         {screen === 'landing' && <LandingPage onLogin={() => navigateTo('login')} onSignup={() => navigateTo('signup')} />}
-        {(screen === 'login' || screen === 'signup') && <AuthPanel mode={screen} onLogin={handleLogin} onSignup={handleSignup} onSwitchMode={(m) => navigateTo(m)} />}
+        {(screen === 'login' || screen === 'signup') && <AuthPanel key={screen} mode={screen} onLogin={handleLogin} onSignup={handleSignup} onSwitchMode={(m) => navigateTo(m)} />}
         {screen === 'user' && activeUser && activeUser.role === 'user' && (
           <UserDashboard
             user={activeUser}
