@@ -48,7 +48,7 @@ export const useFormStore = create<StoreState>()(
       resetForm: () => set({ form: initialFormState, isDirty: false, saveStatus: 'idle' }),
     }),
     {
-      name: 'certflow-form-storage', // name of the item in the storage (must be unique)
+      name: 'proofly-form-storage', // name of the item in the storage (must be unique)
       partialize: (state) => ({ form: state.form }), // only persist the form state
     }
   )

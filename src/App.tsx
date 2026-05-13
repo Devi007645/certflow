@@ -65,7 +65,7 @@ type Certification = {
 
 const adminUser: Profile = {
   id: 'adm_1Root',
-  email: 'admin@certflow.app',
+  email: 'admin@proofly.app',
   role: 'admin',
   name: 'Avery Morgan',
   department: 'People Operations',
@@ -323,11 +323,27 @@ function App() {
       <header className="sticky top-0 z-40 border-b border-slate-900/10 bg-[#f7f3ea]/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
               <div className="flex items-center gap-3">
-                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-slate-950 text-[#f7c948] shadow-[6px_6px_0_#f7c948]">
-                  <ShieldCheck className="h-6 w-6" />
-                </span>
+                <svg width="48" height="48" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
+                  <defs>
+                    <linearGradient id="brandGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="#38bdf8" />
+                      <stop offset="50%" stopColor="#2563eb" />
+                      <stop offset="100%" stopColor="#7c3aed" />
+                    </linearGradient>
+                  </defs>
+                  {/* Ribbons */}
+                  <path d="M35 65 L25 90 L40 80 L50 90 L45 65 Z" fill="url(#brandGradient)" opacity="0.9"/>
+                  <path d="M65 65 L75 90 L60 80 L50 90 L55 65 Z" fill="url(#brandGradient)" opacity="0.9"/>
+                  {/* Badge */}
+                  <circle cx="50" cy="45" r="25" fill="url(#brandGradient)" />
+                  {/* Checkmark */}
+                  <path d="M40 45 L47 52 L62 35" stroke="white" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
                 <span className="text-left">
-                  <span className="block text-xl font-black tracking-tight">CertFlow</span>
+                  <span className="block text-xl font-black tracking-tight flex items-center">
+                    <span className="text-transparent bg-clip-text bg-gradient-to-br from-[#38bdf8] to-[#7c3aed]">P</span>
+                    <span>roofly</span>
+                  </span>
                   <span className="block text-xs font-semibold text-slate-500">Credential review workspace</span>
                 </span>
                 
@@ -586,7 +602,7 @@ function AuthPanel({ mode, onLogin, onSignup, onSwitchMode }: { mode: 'login' | 
         }
       }
     } else {
-      if (email === 'admin@certflow.app') {
+      if (email === 'admin@proofly.app') {
         const err = onLogin(email)
         if (err) setError(err)
       } else {
