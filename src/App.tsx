@@ -36,7 +36,7 @@ import { useRealtimeSync } from './hooks/useRealtimeSync'
 import './App.css'
 
 type Role = 'user' | 'admin'
-type Screen = 'landing' | 'login' | 'signup' | 'user' | 'admin' | 'reset_password'
+type Screen = 'landing' | 'login' | 'signup' | 'user' | 'admin'
 
 type Profile = {
   id: string
@@ -151,18 +151,6 @@ function App() {
     return () => {
       window.removeEventListener('online', handleOnline)
       window.removeEventListener('offline', handleOffline)
-    }
-  }, [])
-
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setScreen('reset_password')
-      }
-    })
-
-    return () => {
-      subscription.unsubscribe()
     }
   }, [])
 
@@ -445,9 +433,7 @@ function App() {
 
       <div className="relative z-10">
         {screen === 'landing' && <LandingPage onLogin={() => navigateTo('login')} onSignup={() => navigateTo('signup')} />}
-        {(screen === 'login' || screen === 'signup' || screen === 'reset_password') && (
-          <AuthPanel mode={screen} onLogin={handleLogin} onSignup={handleSignup} onSwitchMode={(m) => navigateTo(m)} />
-        )}
+        {(screen === 'login' || screen === 'signup') && <AuthPanel mode={screen} onLogin={handleLogin} onSignup={handleSignup} onSwitchMode={(m) => navigateTo(m)} />}
         {screen === 'user' && activeUser && activeUser.role === 'user' && (
           <UserDashboard
             user={activeUser}
@@ -562,7 +548,7 @@ function LandingPage({ onLogin, onSignup }: { onLogin: () => void; onSignup: () 
   )
 }
 
-function AuthPanel({ mode, onLogin, onSignup, onSwitchMode }: { mode: 'login' | 'signup' | 'reset_password'; onLogin: (email: string) => string | null; onSignup: (user: Profile) => Promise<string | null>; onSwitchMode: (mode: 'login' | 'signup' | 'reset_password') => void }) {
+function AuthPanel({ mode, onLogin, onSignup, onSwitchMode }: { mode: 'login' | 'signup'; onLogin: (email: string) => string | null; onSignup: (user: Profile) => Promise<string | null>; onSwitchMode: (mode: 'login' | 'signup') => void }) {
   const [role, setRole] = useState<Role>('user')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -570,23 +556,6 @@ function AuthPanel({ mode, onLogin, onSignup, onSwitchMode }: { mode: 'login' | 
   const [secretCode, setSecretCode] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
-
-  const handleForgotPassword = async () => {
-    setError('')
-    setSuccess('')
-    if (!email) {
-      setError('Please enter your email address first.')
-      return
-    }
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/`,
-    })
-    if (resetError) {
-      setError(resetError.message)
-    } else {
-      setSuccess('Password reset link sent to your email.')
-    }
-  }
 
   const passwordStrength = useMemo(() => {
     let score = 0;
@@ -609,27 +578,6 @@ function AuthPanel({ mode, onLogin, onSignup, onSwitchMode }: { mode: 'login' | 
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
     if (!emailRegex.test(email)) {
       setError('Please enter a valid enterprise email address')
-      return
-    }
-
-    if (mode === 'reset_password') {
-      if (!password) {
-        setError('Password is required')
-        return
-      }
-      if (passwordStrength < 2) {
-        setError('Password is too weak')
-        return
-      }
-      const { error: updateError } = await supabase.auth.updateUser({ password })
-      if (updateError) {
-        setError(updateError.message)
-      } else {
-        setSuccess('Password updated successfully. Please log in.')
-        setTimeout(() => {
-          onSwitchMode('login')
-        }, 2000)
-      }
       return
     }
 
@@ -717,9 +665,9 @@ function AuthPanel({ mode, onLogin, onSignup, onSwitchMode }: { mode: 'login' | 
       <div className="grid overflow-hidden rounded-[2.5rem] border-2 border-slate-950 bg-white shadow-[12px_12px_0_#111827] md:grid-cols-[0.8fr_1.2fr]">
         <div className="bg-slate-950 p-8 text-white">
           <div className="grid h-14 w-14 place-items-center rounded-2xl bg-[#f7c948] text-slate-950"><KeyRound /></div>
-          <h1 className="mt-8 text-4xl font-black capitalize">{mode === 'reset_password' ? 'Reset Password' : mode}</h1>
+          <h1 className="mt-8 text-4xl font-black capitalize">{mode}</h1>
           <p className="mt-3 text-slate-300">
-            {mode === 'login' ? 'Welcome back! Sign in to continue.' : mode === 'signup' ? 'Create an account to start tracking credentials.' : 'Enter your new password below.'}
+            {mode === 'login' ? 'Welcome back! Sign in to continue.' : 'Create an account to start tracking credentials.'}
           </p>
           <div className="mt-8 space-y-3 text-sm text-slate-300">
             <p className="flex gap-2"><CheckCircle2 className="h-5 w-5 text-[#f7c948]" /> Email and password access</p>
@@ -732,29 +680,12 @@ function AuthPanel({ mode, onLogin, onSignup, onSwitchMode }: { mode: 'login' | 
             {success && <p className="rounded-2xl bg-green-100 px-4 py-3 text-sm font-black text-green-800">{success}</p>}
             {error && <p className="rounded-2xl bg-red-100 px-4 py-3 text-sm font-black text-red-700">{error}</p>}
 
-            {mode === 'reset_password' ? (
-              <TextInput label="New Password" value={password} onChange={setPassword} type="password" placeholder="••••••••••••" />
-            ) : (
-              <>
-                {mode === 'signup' && (
-                  <TextInput label="Full Name" value={name} onChange={setName} placeholder="e.g. Alex Morgan" />
-                )}
-
-                <TextInput label="Email" value={email} onChange={setEmail} type="email" placeholder="e.g. email@example.com" />
-                <TextInput label="Password" value={password} onChange={setPassword} type="password" placeholder="••••••••••••" />
-                
-                {mode === 'login' && (
-                  <div className="text-right mt-1">
-                    <button
-                      onClick={handleForgotPassword}
-                      className="text-sm font-bold text-slate-500 hover:text-slate-950"
-                    >
-                      Forgot Password?
-                    </button>
-                  </div>
-                )}
-              </>
+            {mode === 'signup' && (
+              <TextInput label="Full Name" value={name} onChange={setName} placeholder="e.g. Alex Morgan" />
             )}
+
+            <TextInput label="Email" value={email} onChange={setEmail} type="email" placeholder="e.g. email@example.com" />
+            <TextInput label="Password" value={password} onChange={setPassword} type="password" placeholder="••••••••••••" />
 
             {mode === 'signup' && (
               <div className="mt-1">
@@ -806,19 +737,17 @@ function AuthPanel({ mode, onLogin, onSignup, onSwitchMode }: { mode: 'login' | 
             )}
 
             <button onClick={handleSubmit} className="mt-2 rounded-2xl bg-[#3654ff] px-6 py-4 font-black text-white shadow-[6px_6px_0_#111827] transition hover:-translate-y-0.5">
-              {mode === 'login' ? 'Sign in' : mode === 'signup' ? 'Create account' : 'Update Password'}
+              {mode === 'login' ? 'Sign in' : 'Create account'}
             </button>
 
-            {mode !== 'reset_password' && (
-              <div className="text-center mt-2">
-                <button
-                  onClick={() => onSwitchMode(mode === 'login' ? 'signup' : 'login')}
-                  className="text-sm font-bold text-slate-500 hover:text-slate-950"
-                >
-                  {mode === 'login' ? "Don't have an account? Sign up" : "Already have an account? Log in"}
-                </button>
-              </div>
-            )}
+            <div className="text-center mt-2">
+              <button
+                onClick={() => onSwitchMode(mode === 'login' ? 'signup' : 'login')}
+                className="text-sm font-bold text-slate-500 hover:text-slate-950"
+              >
+                {mode === 'login' ? "Don't have an account? Sign up" : "Already have an account? Log in"}
+              </button>
+            </div>
           </div>
         </div>
       </div>
