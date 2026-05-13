@@ -658,7 +658,7 @@ function UserDashboard({ user, certifications, onAdd, onView, onUpload, onRemove
       <div className="mt-8 grid gap-4 md:grid-cols-3">
         <StatCard icon={<FileText />} label="My submissions" value={certifications.length.toString()} tone="bg-[#bfdbfe]" />
         <StatCard icon={<CheckCircle2 />} label="Approved / reviewed" value={certifications.filter((cert) => cert.admin_review).length.toString()} tone="bg-[#d9f99d]" />
-        <StatCard icon={<CalendarDays />} label="Newest upload" value={certifications[0]?.created_at ?? 'None'} tone="bg-[#fecdd3]" />
+        <StatCard icon={<CalendarDays />} label="Newest upload" value={certifications[0]?.created_at ? certifications[0].created_at.slice(0, 10) : 'None'} tone="bg-[#fecdd3]" />
       </div>
       <CertificationGrid certifications={certifications} onView={onView} onUpload={onUpload} onRemove={onRemove} />
     </section>
@@ -797,7 +797,7 @@ function CertificationGrid({ certifications, onView, onUpload, onRemove }: { cer
           </div>
           <div className="grid gap-3 text-sm font-bold text-slate-600 sm:grid-cols-2">
             <p className="rounded-2xl bg-[#f8fafc] p-3">Issued: {cert.issue_date}</p>
-            <p className="rounded-2xl bg-[#f8fafc] p-3">Submitted: {cert.created_at}</p>
+            <p className="rounded-2xl bg-[#f8fafc] p-3">Submitted: {cert.created_at ? cert.created_at.slice(0, 10) : ''}</p>
           </div>
           {cert.tags && cert.tags.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-1">
