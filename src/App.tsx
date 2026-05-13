@@ -30,7 +30,7 @@ import {
 import { supabase } from './lib/supabase'
 import { useFormStore } from './store/useFormStore'
 import { useRealtimeForm } from './hooks/useRealtimeForm'
-import { useCertifications, useCreateCertification, useUpdateCertification } from './queries/useCertifications'
+import { useCertifications, useCreateCertification, useUpdateCertification, useDeleteCertification } from './queries/useCertifications'
 import { useRealtimeSync } from './hooks/useRealtimeSync'
 import './App.css'
 
@@ -58,6 +58,7 @@ type Certification = {
   probable_completion_time?: string
   notes?: string
   tags?: string[]
+  emoji?: string
 }
 
 const adminUser: Profile = {
@@ -85,7 +86,7 @@ const certSchema = z.object({
 function App() {
   const [screen, setScreen] = useState<Screen>('landing')
   const [isTransitioning, setIsTransitioning] = useState(false)
-  const { data: certifications = [], refetch } = useCertifications()
+  const { data: certifications = [], refetch, isFetching } = useCertifications()
 
   const navigateTo = (targetScreen: Screen) => {
     setIsTransitioning(true)
@@ -96,12 +97,15 @@ function App() {
   }
   const createCertificationMutation = useCreateCertification()
   const updateCertificationMutation = useUpdateCertification()
+  const deleteCertificationMutation = useDeleteCertification()
   const [peopleState, setPeopleState] = useState<Record<string, Profile>>(people)
   const [activeUser, setActiveUser] = useState<Profile | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedCert, setSelectedCert] = useState<Certification | null>(null)
   const [query, setQuery] = useState('')
   const [reviewText, setReviewText] = useState('')
+  const [emoji, setEmoji] = useState('')
+  const [editingCert, setEditingCert] = useState<Certification | null>(null)
   
   const { form, updateForm: setForm } = useRealtimeForm(activeUser?.id)
   const saveStatus = useFormStore((state) => state.saveStatus)
@@ -110,6 +114,30 @@ function App() {
   const [viewingCert, setViewingCert] = useState<Certification | null>(null)
   const [formError, setFormError] = useState('')
   
+  const handleDeleteCertification = async (id: number) => {
+    if (window.confirm('Are you sure you want to delete this certification?')) {
+      try {
+        await deleteCertificationMutation.mutateAsync(id)
+      } catch (error) {
+        console.error("Error deleting certification:", error)
+      }
+    }
+  }
+
+  const handleEditCertification = (cert: Certification) => {
+    setEditingCert(cert)
+    setForm({
+      title: cert.title,
+      issuing_organization: cert.issuing_organization,
+      issue_date: cert.issue_date,
+      fileName: cert.fileName || '',
+      fileData: cert.file_url || '',
+      probable_completion_time: cert.probable_completion_time || '',
+      tags: cert.tags || [],
+    })
+    setIsModalOpen(true)
+  }
+
   // Initialize realtime sync
   useRealtimeSync()
 
@@ -219,24 +247,27 @@ function App() {
       return
     }
 
-    const newCertData = {
+    const certData = {
       user_id: activeUser?.id ?? '',
       title: form.title,
       issuing_organization: form.issuing_organization,
       issue_date: form.issue_date,
       file_url: form.fileData || '',
       fileName: form.fileName,
-      admin_review: '',
-      notes: '',
       probable_completion_time: form.probable_completion_time,
       tags: form.tags,
     }
 
     try {
-      await createCertificationMutation.mutateAsync(newCertData)
+      if (editingCert) {
+        await updateCertificationMutation.mutateAsync({ id: editingCert.id, ...certData })
+      } else {
+        await createCertificationMutation.mutateAsync({ ...certData, admin_review: '', notes: '' })
+      }
       resetForm()
       setFormError('')
       setIsModalOpen(false)
+      setEditingCert(null)
     } catch (error: any) {
       setFormError(error.message)
     }
@@ -248,6 +279,7 @@ function App() {
     const updates: any = {}
     if (activeUser?.role === 'admin') {
       updates.admin_review = reviewText.trim()
+      updates.emoji = emoji
     } else {
       updates.notes = reviewText.trim()
     }
@@ -256,6 +288,7 @@ function App() {
       await updateCertificationMutation.mutateAsync({ id: selectedCert.id, ...updates })
       setSelectedCert(null)
       setReviewText('')
+      setEmoji('')
     } catch (error) {
       console.error("Error updating review:", error)
     }
@@ -325,29 +358,19 @@ function App() {
                   )}
                 </div>
               </div>
-          {activeUser && screen !== 'login' && screen !== 'signup' && (
-            <nav className="hidden items-center gap-2 rounded-full border border-slate-900/10 bg-white/70 p-1 shadow-sm md:flex">
-              {activeUser.role === 'user' && (
-                <button onClick={() => navigateTo('user')} className="rounded-full px-4 py-2 text-sm font-bold hover:bg-slate-950 hover:text-white">My records</button>
-              )}
-              {activeUser.role === 'admin' && (
-                <button onClick={() => navigateTo('admin')} className="rounded-full px-4 py-2 text-sm font-bold hover:bg-slate-950 hover:text-white">Review center</button>
-              )}
-            </nav>
-          )}
           <div className="flex items-center gap-2">
             {activeUser && screen !== 'login' && screen !== 'signup' ? (
               <>
                 <button onClick={() => {
                   setActiveUser(null);
                   navigateTo('landing');
-                }} className="hidden rounded-full px-4 py-2 text-sm font-black text-slate-700 hover:bg-white sm:inline-flex">Log out</button>
-                <button onClick={() => navigateTo('signup')} className="rounded-full bg-[#3654ff] px-5 py-2.5 text-sm font-black text-white shadow-[4px_4px_0_#111827] transition hover:-translate-y-0.5">Sign up</button>
+                }} className="hidden rounded-full px-4 py-2 text-sm font-black text-slate-700 hover:bg-white sm:inline-flex" title="Log out">Log out</button>
+                <button onClick={() => navigateTo('signup')} className="rounded-full bg-[#3654ff] px-5 py-2.5 text-sm font-black text-white shadow-[4px_4px_0_#111827] transition hover:-translate-y-0.5" title="Create a new account">Sign up</button>
               </>
             ) : (
               <>
-                <button onClick={() => navigateTo('login')} className="hidden rounded-full px-4 py-2 text-sm font-black text-slate-700 hover:bg-white sm:inline-flex">Login</button>
-                <button onClick={() => navigateTo('signup')} className="rounded-full bg-[#3654ff] px-5 py-2.5 text-sm font-black text-white shadow-[4px_4px_0_#111827] transition hover:-translate-y-0.5">Sign up</button>
+                <button onClick={() => navigateTo('login')} className="hidden rounded-full px-4 py-2 text-sm font-black text-slate-700 hover:bg-white sm:inline-flex" title="Log in to your account">Login</button>
+                <button onClick={() => navigateTo('signup')} className="rounded-full bg-[#3654ff] px-5 py-2.5 text-sm font-black text-white shadow-[4px_4px_0_#111827] transition hover:-translate-y-0.5" title="Create a new account">Sign up</button>
               </>
             )}
           </div>
@@ -366,6 +389,9 @@ function App() {
             onUpload={handleUploadDocument}
             onRemove={handleRemoveDocument}
             onRefresh={refetch}
+            isRefreshing={isFetching}
+            onEdit={handleEditCertification}
+            onDelete={handleDeleteCertification}
           />
         )}
         {screen === 'admin' && activeUser && activeUser.role === 'admin' && (
@@ -380,9 +406,11 @@ function App() {
             onReview={(cert) => {
               setSelectedCert(cert)
               setReviewText(activeUser.role === 'admin' ? cert.admin_review : (cert.notes || ''))
+              setEmoji(cert.emoji || '')
             }}
             onView={setViewingCert}
             onRefresh={refetch}
+            isRefreshing={isFetching}
           />
         )}
       </div>
@@ -392,8 +420,13 @@ function App() {
           form={form}
           setForm={setForm}
           error={formError}
-          onClose={() => setIsModalOpen(false)}
+          onClose={() => {
+            setIsModalOpen(false)
+            setEditingCert(null)
+            resetForm()
+          }}
           onSubmit={handleAddCertification}
+          isEdit={Boolean(editingCert)}
         />
       )}
 
@@ -402,7 +435,12 @@ function App() {
           cert={selectedCert}
           reviewText={reviewText}
           setReviewText={setReviewText}
-          onClose={() => setSelectedCert(null)}
+          emoji={emoji}
+          setEmoji={setEmoji}
+          onClose={() => {
+            setSelectedCert(null)
+            setEmoji('')
+          }}
           onSave={handleSaveReview}
           people={peopleState}
           role={activeUser?.role}
@@ -412,36 +450,17 @@ function App() {
       {viewingCert && (
         <DocumentViewer cert={viewingCert} onClose={() => setViewingCert(null)} />
       )}
-      {isTransitioning && <LoadingOverlay isOnline={isOnline} />}
+      {isTransitioning && <LoadingOverlay />}
     </main>
   )
 }
 
-function LoadingOverlay({ isOnline }: { isOnline: boolean }) {
+function LoadingOverlay() {
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#f7f3ea]/90 backdrop-blur-sm">
-      <div className="rounded-[2.5rem] border-2 border-slate-950 bg-white p-10 shadow-[12px_12px_0_#111827] flex flex-col items-center gap-6 max-w-sm w-full mx-4">
-        <div className="relative">
-          <div className="h-16 w-16 animate-spin rounded-full border-4 border-slate-200 border-t-[#3654ff]"></div>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="h-8 w-8 rounded-full bg-slate-950"></div>
-          </div>
-        </div>
-        <div className="text-center">
-          <h2 className="text-2xl font-black">CertFlow</h2>
-          <p className="text-sm font-bold text-slate-500 mt-1">Loading next screen...</p>
-        </div>
-        <div className={`w-full rounded-2xl border-2 border-slate-950 p-3 text-sm font-black flex items-center justify-center gap-2 ${isOnline ? 'bg-[#d9f99d]' : 'bg-[#fecdd3]'}`}>
-          {isOnline ? (
-            <>
-              <ShieldCheck className="h-4 w-4" /> Network Connected
-            </>
-          ) : (
-            <>
-              <EyeOff className="h-4 w-4" /> Offline Mode
-            </>
-          )}
-        </div>
+      <div className="rounded-[2rem] border-2 border-slate-950 bg-white p-6 shadow-[8px_8px_0_#111827] flex flex-col items-center gap-4 max-w-sm w-full mx-4">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-[#3654ff]"></div>
+        <p className="text-sm font-bold text-slate-500">Loading...</p>
       </div>
     </div>
   )
@@ -685,7 +704,7 @@ function AuthPanel({ mode, onLogin, onSignup, onSwitchMode }: { mode: 'login' | 
   )
 }
 
-function UserDashboard({ user, certifications, onAdd, onView, onUpload, onRemove, onRefresh }: { user: Profile; certifications: Certification[]; onAdd: () => void; onView: (cert: Certification) => void; onUpload: (certId: number, fileName: string, fileData: string) => void; onRemove: (certId: number) => void; onRefresh: () => void }) {
+function UserDashboard({ user, certifications, onAdd, onView, onUpload, onRemove, onRefresh, isRefreshing, onEdit, onDelete }: { user: Profile; certifications: Certification[]; onAdd: () => void; onView: (cert: Certification) => void; onUpload: (certId: number, fileName: string, fileData: string) => void; onRemove: (certId: number) => void; onRefresh: () => void; isRefreshing: boolean; onEdit: (cert: Certification) => void; onDelete: (id: number) => void }) {
   return (
     <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <DashboardHeader
@@ -695,10 +714,10 @@ function UserDashboard({ user, certifications, onAdd, onView, onUpload, onRemove
         subtitle={`${user.department} · ${user.email}`}
         action={
           <div className="flex items-center gap-3">
-            <button onClick={onRefresh} className="inline-flex items-center justify-center h-12 w-12 rounded-2xl border-2 border-slate-950 bg-white hover:bg-slate-50 shadow-[4px_4px_0_#111827] transition hover:-translate-y-0.5">
-              <RefreshCw className="h-5 w-5" />
+            <button onClick={onRefresh} className="inline-flex items-center justify-center h-12 w-12 rounded-2xl border-2 border-slate-950 bg-white hover:bg-slate-50 shadow-[4px_4px_0_#111827] transition hover:-translate-y-0.5" title="Refresh data">
+              <RefreshCw className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
             </button>
-            <button onClick={onAdd} className="inline-flex items-center gap-2 rounded-2xl bg-[#3654ff] px-5 py-3 font-black text-white shadow-[5px_5px_0_#111827] transition hover:-translate-y-0.5"><Plus className="h-5 w-5" /> Add certificate</button>
+            <button onClick={onAdd} className="inline-flex items-center gap-2 rounded-2xl bg-[#3654ff] px-5 py-3 font-black text-white shadow-[5px_5px_0_#111827] transition hover:-translate-y-0.5" title="Add certificate"><Plus className="h-5 w-5" /> Add certificate</button>
           </div>
         }
       />
@@ -707,12 +726,14 @@ function UserDashboard({ user, certifications, onAdd, onView, onUpload, onRemove
         <StatCard icon={<CheckCircle2 />} label="Approved / reviewed" value={certifications.filter((cert) => cert.admin_review).length.toString()} tone="bg-[#d9f99d]" />
         <StatCard icon={<CalendarDays />} label="Newest upload" value={certifications[0]?.created_at ? certifications[0].created_at.slice(0, 10) : 'None'} tone="bg-[#fecdd3]" />
       </div>
-      <CertificationGrid certifications={certifications} onView={onView} onUpload={onUpload} onRemove={onRemove} />
+      <div className={`${isRefreshing ? 'opacity-50 pointer-events-none' : ''} transition-opacity`}>
+        <CertificationGrid certifications={certifications} onView={onView} onUpload={onUpload} onRemove={onRemove} onEdit={onEdit} onDelete={onDelete} />
+      </div>
     </section>
   )
 }
 
-function AdminDashboard({ admin, certifications, people, query, setQuery, reviewedCount, pendingCount, onReview, onView, onRefresh }: { admin: Profile; certifications: Certification[]; people: Record<string, Profile>; query: string; setQuery: (value: string) => void; reviewedCount: number; pendingCount: number; onReview: (cert: Certification) => void; onView: (cert: Certification) => void; onRefresh: () => void }) {
+function AdminDashboard({ admin, certifications, people, query, setQuery, reviewedCount, pendingCount, onReview, onView, onRefresh, isRefreshing }: { admin: Profile; certifications: Certification[]; people: Record<string, Profile>; query: string; setQuery: (value: string) => void; reviewedCount: number; pendingCount: number; onReview: (cert: Certification) => void; onView: (cert: Certification) => void; onRefresh: () => void; isRefreshing: boolean }) {
   const groupedCerts = useMemo(() => {
     const groups: Record<string, Certification[]> = {}
     certifications.forEach(cert => {
@@ -731,8 +752,8 @@ function AdminDashboard({ admin, certifications, people, query, setQuery, review
         subtitle={`${admin.name} · ${admin.department}`}
         action={
           <div className="flex items-center gap-3">
-            <button onClick={onRefresh} className="inline-flex items-center justify-center h-12 w-12 rounded-2xl border-2 border-slate-950 bg-white hover:bg-slate-50 shadow-[4px_4px_0_#111827] transition hover:-translate-y-0.5">
-              <RefreshCw className="h-5 w-5" />
+            <button onClick={onRefresh} className="inline-flex items-center justify-center h-12 w-12 rounded-2xl border-2 border-slate-950 bg-white hover:bg-slate-50 shadow-[4px_4px_0_#111827] transition hover:-translate-y-0.5" title="Refresh data">
+              <RefreshCw className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
             </button>
             <div className="inline-flex items-center gap-2 rounded-2xl border-2 border-slate-950 bg-[#f7c948] px-5 py-3 font-black"><Bell className="h-5 w-5" /> {pendingCount} pending</div>
           </div>
@@ -754,7 +775,7 @@ function AdminDashboard({ admin, certifications, people, query, setQuery, review
             <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search records..." className="w-full rounded-2xl border-2 border-slate-200 bg-[#f8fafc] py-3 pl-12 pr-4 font-bold outline-none focus:border-[#3654ff]" />
           </div>
         </div>
-        <div className="grid gap-6">
+        <div className={`grid gap-6 ${isRefreshing ? 'opacity-50 pointer-events-none' : ''} transition-opacity`}>
           {Object.entries(groupedCerts).map(([userId, certs]) => {
             const person = people[userId]
             return (
@@ -789,12 +810,12 @@ function AdminDashboard({ admin, certifications, people, query, setQuery, review
                       <div className="flex flex-wrap items-center gap-2 lg:justify-end">
                         <StatusPill reviewed={Boolean(cert.admin_review)} delayed={cert.probable_completion_time ? new Date().toISOString().slice(0, 10) > cert.probable_completion_time : false} />
                         {cert.fileName && (
-                          <button onClick={() => onView(cert)} className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-2 text-sm font-black text-slate-700 border border-slate-200">
+                          <button onClick={() => onView(cert)} className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-2 text-sm font-black text-slate-700 border border-slate-200" title="View document">
                             <Eye className="h-4 w-4" /> View
                           </button>
                         )}
-                        <button onClick={() => onReview(cert)} className="rounded-full bg-slate-950 px-4 py-2 text-sm font-black text-white">
-                          {admin.role === 'admin' ? 'Review' : 'Add Notes'}
+                        <button onClick={() => onReview(cert)} className="rounded-full bg-slate-950 px-4 py-2 text-sm font-black text-white" title={cert.admin_review ? 'Edit review' : 'Review certificate'}>
+                          {admin.role === 'admin' ? (cert.admin_review ? 'Edit Review' : 'Review') : 'Add Notes'}
                         </button>
                       </div>
                     </article>
@@ -837,7 +858,7 @@ function StatCard({ icon, label, value, tone }: { icon: ReactNode; label: string
   )
 }
 
-function CertificationGrid({ certifications, onView, onUpload, onRemove }: { certifications: Certification[]; onView: (cert: Certification) => void; onUpload: (certId: number, fileName: string, fileData: string) => void; onRemove: (certId: number) => void }) {
+function CertificationGrid({ certifications, onView, onUpload, onRemove, onEdit, onDelete }: { certifications: Certification[]; onView: (cert: Certification) => void; onUpload: (certId: number, fileName: string, fileData: string) => void; onRemove: (certId: number) => void; onEdit: (cert: Certification) => void; onDelete: (id: number) => void }) {
   return (
     <div className="mt-8 grid gap-5 lg:grid-cols-2">
       {certifications.map((cert) => (
@@ -847,7 +868,10 @@ function CertificationGrid({ certifications, onView, onUpload, onRemove }: { cer
               <p className="text-sm font-black uppercase tracking-wide text-[#3654ff]">{cert.issuing_organization}</p>
               <h3 className="mt-1 text-2xl font-black">{cert.title}</h3>
             </div>
-            <StatusPill reviewed={Boolean(cert.admin_review)} delayed={cert.probable_completion_time ? new Date().toISOString().slice(0, 10) > cert.probable_completion_time : false} />
+            <div className="flex items-center gap-2">
+              {cert.emoji && <span className="text-2xl" title="Admin reaction">{cert.emoji}</span>}
+              <StatusPill reviewed={Boolean(cert.admin_review)} delayed={cert.probable_completion_time ? new Date().toISOString().slice(0, 10) > cert.probable_completion_time : false} />
+            </div>
           </div>
           <div className="grid gap-3 text-sm font-bold text-slate-600 sm:grid-cols-2">
             <p className="rounded-2xl bg-[#f8fafc] p-3">Issued: {cert.issue_date}</p>
@@ -866,15 +890,15 @@ function CertificationGrid({ certifications, onView, onUpload, onRemove }: { cer
           <div className="mt-5 flex flex-wrap gap-2">
             {cert.fileName ? (
               <>
-                <button onClick={() => onView(cert)} className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2 text-sm font-black text-white">
+                <button onClick={() => onView(cert)} className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2 text-sm font-black text-white" title="View document">
                   <Eye className="h-4 w-4" /> View
                 </button>
-                <button onClick={() => onRemove(cert.id)} className="inline-flex items-center gap-2 rounded-full bg-red-100 px-4 py-2 text-sm font-black text-red-700 hover:bg-red-200">
+                <button onClick={() => onRemove(cert.id)} className="inline-flex items-center gap-2 rounded-full bg-red-100 px-4 py-2 text-sm font-black text-red-700 hover:bg-red-200" title="Remove document">
                   <X className="h-4 w-4" /> Remove Document
                 </button>
               </>
             ) : (
-              <label className="inline-flex items-center gap-2 rounded-full bg-[#bfdbfe] px-4 py-2 text-sm font-black text-slate-700 hover:bg-[#a5c4f7] cursor-pointer">
+              <label className="inline-flex items-center gap-2 rounded-full bg-[#bfdbfe] px-4 py-2 text-sm font-black text-slate-700 hover:bg-[#a5c4f7] cursor-pointer" title="Upload document">
                 <UploadCloud className="h-4 w-4" /> Upload Document
                 <input type="file" accept=".pdf" className="hidden" onChange={(event) => {
                   const file = event.target.files?.[0];
@@ -892,6 +916,12 @@ function CertificationGrid({ certifications, onView, onUpload, onRemove }: { cer
                 }} />
               </label>
             )}
+            <button onClick={() => onEdit(cert)} className="inline-flex items-center gap-2 rounded-full bg-yellow-100 px-4 py-2 text-sm font-black text-yellow-700 hover:bg-yellow-200" title="Edit certificate">
+              Edit
+            </button>
+            <button onClick={() => onDelete(cert.id)} className="inline-flex items-center gap-2 rounded-full bg-red-100 px-4 py-2 text-sm font-black text-red-700 hover:bg-red-200" title="Delete certificate">
+              Delete
+            </button>
             {cert.admin_review ? <span className="rounded-full bg-[#d9f99d] px-4 py-2 text-sm font-black">{cert.admin_review}</span> : <span className="rounded-full bg-[#fef3c7] px-4 py-2 text-sm font-black">Awaiting admin feedback</span>}
           </div>
         </article>
@@ -1071,14 +1101,14 @@ const findBestMatch = (source: string, targets: string[]) => {
   return best;
 };
 
-function AddCertificationDialog({ form, setForm, error, onClose, onSubmit }: { form: { title: string; issuing_organization: string; issue_date: string; fileName: string; fileData?: string; probable_completion_time?: string; tags: string[] }; setForm: (value: { title: string; issuing_organization: string; issue_date: string; fileName: string; fileData?: string; probable_completion_time?: string; tags: string[] }) => void; error: string; onClose: () => void; onSubmit: () => void }) {
+function AddCertificationDialog({ form, setForm, error, onClose, onSubmit, isEdit }: { form: { title: string; issuing_organization: string; issue_date: string; fileName: string; fileData?: string; probable_completion_time?: string; tags: string[] }; setForm: (value: { title: string; issuing_organization: string; issue_date: string; fileName: string; fileData?: string; probable_completion_time?: string; tags: string[] }) => void; error: string; onClose: () => void; onSubmit: () => void; isEdit?: boolean }) {
   const orgs = Object.keys(ORGANIZATION_DATA);
   const selectedOrg = form.issuing_organization;
   const courses = selectedOrg ? ORGANIZATION_DATA[selectedOrg]?.courses || [] : [];
   const bestFor = selectedOrg ? ORGANIZATION_DATA[selectedOrg]?.bestFor : '';
 
   return (
-    <Modal onClose={onClose} title="Add certification" icon={<UploadCloud />}>
+    <Modal onClose={onClose} title={isEdit ? "Edit certification" : "Add certification"} icon={<UploadCloud />}>
       <div className="space-y-4">
         {/* Dropdown for Issuing Organization */}
         <label className="block text-sm font-black uppercase tracking-wide text-slate-500">
@@ -1201,13 +1231,13 @@ function AddCertificationDialog({ form, setForm, error, onClose, onSubmit }: { f
           }} />
         </label>
         {error && <p className="rounded-2xl bg-red-100 px-4 py-3 text-sm font-black text-red-700">{error}</p>}
-        <button onClick={onSubmit} className="w-full rounded-2xl bg-[#3654ff] px-6 py-4 font-black text-white shadow-[5px_5px_0_#111827]">Submit certificate</button>
+        <button onClick={onSubmit} className="w-full rounded-2xl bg-[#3654ff] px-6 py-4 font-black text-white shadow-[5px_5px_0_#111827]">{isEdit ? 'Save changes' : 'Submit certificate'}</button>
       </div>
     </Modal>
   );
 }
 
-function ReviewDialog({ cert, reviewText, setReviewText, onClose, onSave, people, role, onView }: { cert: Certification; reviewText: string; setReviewText: (value: string) => void; onClose: () => void; onSave: () => void; people?: Record<string, Profile>; role?: Role; onView: (cert: Certification) => void }) {
+function ReviewDialog({ cert, reviewText, setReviewText, onClose, onSave, people, role, onView, emoji, setEmoji }: { cert: Certification; reviewText: string; setReviewText: (value: string) => void; onClose: () => void; onSave: () => void; people?: Record<string, Profile>; role?: Role; onView: (cert: Certification) => void; emoji: string; setEmoji: (value: string) => void }) {
   const person = people ? people[cert.user_id] : null
   const isAdmin = role === 'admin'
   return (
@@ -1216,7 +1246,7 @@ function ReviewDialog({ cert, reviewText, setReviewText, onClose, onSave, people
         <div className="rounded-3xl bg-[#f8fafc] p-4">
           <p className="font-black">{cert.title}</p>
           <p className="text-sm font-medium text-slate-500">{person?.name} · {cert.issuing_organization}</p>
-          <button onClick={() => onView(cert)} className="mt-3 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-slate-950"><Eye className="h-4 w-4" /> View document</button>
+          <button onClick={() => onView(cert)} className="mt-3 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-slate-950" title="View document"><Eye className="h-4 w-4" /> View document</button>
         </div>
         {isAdmin ? (
           <>
@@ -1226,6 +1256,20 @@ function ReviewDialog({ cert, reviewText, setReviewText, onClose, onSave, people
                 <p className="text-sm font-semibold mt-1">{cert.notes}</p>
               </div>
             )}
+            <label className="block text-sm font-black uppercase tracking-wide text-slate-500">Reaction</label>
+            <div className="flex gap-2 my-2">
+              {['👍', '🎉', '👏', '🔥', '💯'].map((e) => (
+                <button
+                  key={e}
+                  type="button"
+                  onClick={() => setEmoji(e === emoji ? '' : e)}
+                  className={`text-2xl p-2 rounded-xl border-2 transition-colors ${e === emoji ? 'border-slate-950 bg-[#f7c948]' : 'border-transparent bg-[#f8fafc] hover:bg-slate-100'}`}
+                  title={`React with ${e}`}
+                >
+                  {e}
+                </button>
+              ))}
+            </div>
             <label className="block text-sm font-black uppercase tracking-wide text-slate-500">Feedback (Admin)</label>
             <textarea value={reviewText} onChange={(event) => setReviewText(event.target.value)} rows={5} className="w-full rounded-2xl border-2 border-slate-200 bg-white p-4 font-semibold outline-none focus:border-[#3654ff]" placeholder="Write approval notes or requested corrections..." />
           </>
@@ -1237,12 +1281,18 @@ function ReviewDialog({ cert, reviewText, setReviewText, onClose, onSave, people
                 <p className="text-sm font-semibold mt-1">{cert.admin_review}</p>
               </div>
             )}
+            {cert.emoji && (
+              <div className="rounded-2xl bg-[#bfdbfe] p-4 mb-2 flex items-center gap-2">
+                <p className="text-xs font-black uppercase text-slate-500">Admin Reaction:</p>
+                <span className="text-2xl">{cert.emoji}</span>
+              </div>
+            )}
             <label className="block text-sm font-black uppercase tracking-wide text-slate-500">My Notes</label>
             <textarea value={reviewText} onChange={(event) => setReviewText(event.target.value)} rows={5} className="w-full rounded-2xl border-2 border-slate-200 bg-white p-4 font-semibold outline-none focus:border-[#3654ff]" placeholder="Add notes to this certification..." />
           </>
         )}
         <button onClick={onSave} className="w-full rounded-2xl bg-slate-950 px-6 py-4 font-black text-white shadow-[5px_5px_0_#f7c948]">
-          {isAdmin ? "Save feedback" : "Save notes"}
+          {isAdmin ? (cert.admin_review ? "Update feedback" : "Save feedback") : "Save notes"}
         </button>
       </div>
     </Modal>

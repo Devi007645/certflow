@@ -14,6 +14,7 @@ export type Certification = {
   probable_completion_time?: string
   notes?: string
   tags?: string[]
+  emoji?: string
 }
 
 export const useCertifications = () => {
@@ -72,6 +73,26 @@ export const useCreateCertification = () => {
       const { data, error } = await supabase
         .from('certifications')
         .insert([newCert])
+        .select()
+
+      if (error) throw error
+      return data[0] as Certification
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['certifications'] })
+    },
+  })
+}
+
+export const useDeleteCertification = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const { data, error } = await supabase
+        .from('certifications')
+        .delete()
+        .eq('id', id)
         .select()
 
       if (error) throw error
