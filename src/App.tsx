@@ -419,12 +419,12 @@ function App() {
                   setActiveUser(null);
                   navigateTo('landing');
                 }} className="hidden rounded-full px-4 py-2 text-sm font-black text-slate-700 hover:bg-white sm:inline-flex" title="Log out">Log out</button>
-                <button onClick={() => navigateTo('signup')} className="rounded-full bg-[#3654ff] px-5 py-2.5 text-sm font-black text-white shadow-[4px_4px_0_#111827] transition hover:-translate-y-0.5" title="Create a new account">Sign up</button>
+                <button onClick={() => navigateTo('signup')} className="rounded-full bg-[#3654ff] px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-[#2541d8] transition" title="Create a new account">Sign up</button>
               </>
             ) : (
               <>
                 <button onClick={() => navigateTo('login')} className="hidden rounded-full px-4 py-2 text-sm font-black text-slate-700 hover:bg-white sm:inline-flex" title="Log in to your account">Login</button>
-                <button onClick={() => navigateTo('signup')} className="rounded-full bg-[#3654ff] px-5 py-2.5 text-sm font-black text-white shadow-[4px_4px_0_#111827] transition hover:-translate-y-0.5" title="Create a new account">Sign up</button>
+                <button onClick={() => navigateTo('signup')} className="rounded-full bg-[#3654ff] px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-[#2541d8] transition" title="Create a new account">Sign up</button>
               </>
             )}
           </div>
@@ -514,7 +514,7 @@ function App() {
 function LoadingOverlay() {
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#f7f3ea]/90 backdrop-blur-sm">
-      <div className="rounded-[2rem] border-2 border-slate-950 bg-white p-6 shadow-[8px_8px_0_#111827] flex flex-col items-center gap-4 max-w-sm w-full mx-4">
+      <div className="rounded-[1.5rem] border border-slate-200 bg-white p-6 shadow-lg flex flex-col items-center gap-4 max-w-sm w-full mx-4">
         <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-[#3654ff]"></div>
         <p className="text-sm font-bold text-slate-500">Loading...</p>
       </div>
@@ -525,7 +525,7 @@ function LoadingOverlay() {
 function LandingPage({ onLogin, onSignup }: { onLogin: () => void; onSignup: () => void }) {
   return (
     <section className="mx-auto flex max-w-4xl flex-col items-center justify-center gap-10 px-4 py-12 sm:px-6 lg:px-8 lg:py-24 text-center">
-      <div className="rounded-[2.5rem] border-2 border-slate-950 bg-[#fffaf0] p-8 shadow-[12px_12px_0_#111827] lg:p-12 w-full">
+      <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm lg:p-12 w-full">
         <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-slate-950 bg-[#f7c948] px-4 py-2 text-sm font-black mx-auto">
           <BadgeCheck className="h-4 w-4" /> Simple certificate tracking for teams
         </div>
@@ -536,10 +536,10 @@ function LandingPage({ onLogin, onSignup }: { onLogin: () => void; onSignup: () 
           A friendly certification portal where employees submit credentials and administrators keep every document organized, searchable, and review-ready.
         </p>
         <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-          <button onClick={onSignup} className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-2xl bg-[#3654ff] px-8 py-4 font-black text-white shadow-[5px_5px_0_#111827] transition hover:-translate-y-0.5">
+          <button onClick={onSignup} className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#3654ff] px-8 py-4 font-bold text-white shadow-sm hover:bg-[#2541d8] transition">
             Start now <ChevronRight className="h-5 w-5" />
           </button>
-          <button onClick={onLogin} className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-2xl border-2 border-slate-950 bg-white px-8 py-4 font-black shadow-[5px_5px_0_#f7c948] transition hover:-translate-y-0.5">
+          <button onClick={onLogin} className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-8 py-4 font-bold text-slate-700 shadow-sm hover:bg-slate-50 transition">
             <LogIn className="h-5 w-5" /> Login
           </button>
         </div>
@@ -662,7 +662,7 @@ function AuthPanel({ mode, onLogin, onSignup, onSwitchMode }: { mode: 'login' | 
 
   return (
     <section className="mx-auto max-w-4xl px-4 py-6 sm:py-14 sm:px-6 lg:px-8">
-      <div className="grid overflow-hidden rounded-[2.5rem] border-2 border-slate-950 bg-white shadow-[12px_12px_0_#111827] md:grid-cols-[0.8fr_1.2fr]">
+      <div className="grid overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm md:grid-cols-[0.8fr_1.2fr]">
         <div className="bg-slate-950 p-8 text-white">
           <div className="grid h-14 w-14 place-items-center rounded-2xl bg-[#f7c948] text-slate-950"><KeyRound /></div>
           <h1 className="mt-8 text-4xl font-black capitalize">{mode}</h1>
@@ -724,7 +724,7 @@ function AuthPanel({ mode, onLogin, onSignup, onSwitchMode }: { mode: 'login' | 
                 <p className="mb-2 text-sm font-black uppercase tracking-wide text-slate-500">Account Type</p>
                 <div className="grid grid-cols-2 gap-3">
                   {(['user', 'admin'] as Role[]).map((item) => (
-                    <button key={item} onClick={() => setRole(item)} className={`rounded-2xl border-2 border-slate-950 px-4 py-4 font-black capitalize transition ${role === item ? 'bg-[#f7c948] shadow-[5px_5px_0_#111827]' : 'bg-[#f8fafc] hover:bg-white'}`}>
+                    <button key={item} onClick={() => setRole(item)} className={`rounded-xl border px-4 py-4 font-bold capitalize transition ${role === item ? 'bg-[#3654ff] text-white border-[#3654ff]' : 'bg-[#f8fafc] text-slate-700 border-slate-200 hover:bg-slate-50'}`}>
                       {item}
                     </button>
                   ))}
@@ -736,7 +736,7 @@ function AuthPanel({ mode, onLogin, onSignup, onSwitchMode }: { mode: 'login' | 
               <TextInput label="Admin Secret Code" value={secretCode} onChange={setSecretCode} type="password" placeholder="Enter code..." />
             )}
 
-            <button onClick={handleSubmit} className="mt-2 rounded-2xl bg-[#3654ff] px-6 py-4 font-black text-white shadow-[6px_6px_0_#111827] transition hover:-translate-y-0.5">
+            <button onClick={handleSubmit} className="mt-2 rounded-xl bg-[#3654ff] px-6 py-4 font-bold text-white shadow-sm hover:bg-[#2541d8] transition">
               {mode === 'login' ? 'Sign in' : 'Create account'}
             </button>
 
@@ -765,23 +765,23 @@ function UserDashboard({ user, certifications, allCertifications, people, onAdd,
         subtitle={`${user.department} · ${user.email}`}
         action={
           <div className="flex items-center gap-3">
-            <button onClick={onRefresh} className="inline-flex items-center justify-center h-12 w-12 rounded-2xl border-2 border-slate-950 bg-white hover:bg-slate-50 shadow-[4px_4px_0_#111827] transition hover:-translate-y-0.5" title="Refresh data">
+            <button onClick={onRefresh} className="inline-flex items-center justify-center h-12 w-12 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 shadow-sm transition" title="Refresh data">
               <RefreshCw className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
             </button>
-            <button onClick={onAdd} className="inline-flex items-center gap-2 rounded-2xl bg-[#3654ff] px-5 py-3 font-black text-white shadow-[5px_5px_0_#111827] transition hover:-translate-y-0.5" title="Add certificate"><Plus className="h-5 w-5" /> Add certificate</button>
+            <button onClick={onAdd} className="inline-flex items-center gap-2 rounded-xl bg-[#3654ff] px-5 py-3 font-bold text-white shadow-sm hover:bg-[#2541d8] transition" title="Add certificate"><Plus className="h-5 w-5" /> Add certificate</button>
           </div>
         }
       />
       <div className="mt-8 grid gap-4 md:grid-cols-3">
-        <StatCard icon={<FileText />} label="My submissions" value={certifications.length.toString()} tone="bg-[#bfdbfe]" />
-        <StatCard icon={<CheckCircle2 />} label="Approved / reviewed" value={certifications.filter((cert) => cert.admin_review).length.toString()} tone="bg-[#d9f99d]" />
-        <StatCard icon={<CalendarDays />} label="Newest upload" value={certifications[0]?.created_at ? certifications[0].created_at.slice(0, 10) : 'None'} tone="bg-[#fecdd3]" />
+        <StatCard icon={<FileText />} label="My submissions" value={certifications.length.toString()} />
+        <StatCard icon={<CheckCircle2 />} label="Approved / reviewed" value={certifications.filter((cert) => cert.admin_review).length.toString()} />
+        <StatCard icon={<CalendarDays />} label="Newest upload" value={certifications[0]?.created_at ? certifications[0].created_at.slice(0, 10) : 'None'} />
       </div>
       <div className={`${isRefreshing ? 'opacity-50 pointer-events-none' : ''} transition-opacity`}>
         <CertificationGrid certifications={certifications} onView={onView} onUpload={onUpload} onRemove={onRemove} onEdit={onEdit} onDelete={onDelete} />
       </div>
 
-      <div className="mt-12 rounded-[2.5rem] border-2 border-slate-950 bg-white p-5 pl-8 shadow-[10px_10px_0_#f7c948]">
+      <div className="mt-12 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
         <div className="mb-5">
           <h2 className="text-2xl font-black">Team Progress</h2>
           <p className="text-sm font-medium text-slate-500">View what other employees are working on.</p>
@@ -805,7 +805,7 @@ function UserDashboard({ user, certifications, allCertifications, people, onAdd,
                     <p className="font-black text-lg">{person?.name || 'Unknown User'}</p>
                     <p className="text-sm text-slate-500">{person?.department}</p>
                   </div>
-                  <span className="ml-auto rounded-full bg-[#bfdbfe] px-3 py-1 text-xs font-black border-2 border-slate-950">
+                  <span className="ml-auto rounded-full bg-[#3654ff]/10 px-3 py-1 text-xs font-bold text-[#3654ff] border border-[#3654ff]/20">
                     {certs.length} {certs.length === 1 ? 'Entry' : 'Entries'}
                   </span>
                 </div>
@@ -855,19 +855,19 @@ function AdminDashboard({ admin, certifications, people, query, setQuery, review
         subtitle={`${admin.name} · ${admin.department}`}
         action={
           <div className="flex items-center gap-3">
-            <button onClick={onRefresh} className="inline-flex items-center justify-center h-12 w-12 rounded-2xl border-2 border-slate-950 bg-white hover:bg-slate-50 shadow-[4px_4px_0_#111827] transition hover:-translate-y-0.5" title="Refresh data">
+            <button onClick={onRefresh} className="inline-flex items-center justify-center h-12 w-12 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 shadow-sm transition" title="Refresh data">
               <RefreshCw className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
             </button>
-            <div className="inline-flex items-center gap-2 rounded-2xl border-2 border-slate-950 bg-[#f7c948] px-5 py-3 font-black"><Bell className="h-5 w-5" /> {pendingCount} pending</div>
+            <div className="inline-flex items-center gap-2 rounded-xl border border-yellow-200 bg-yellow-50 px-5 py-3 font-bold text-yellow-700"><Bell className="h-5 w-5" /> {pendingCount} pending</div>
           </div>
         }
       />
       <div className="mt-8 grid gap-4 md:grid-cols-3">
-        <StatCard icon={<FolderOpen />} label="Visible records" value={certifications.length.toString()} tone="bg-[#bfdbfe]" />
-        <StatCard icon={<MessageSquareText />} label="Reviews written" value={reviewedCount.toString()} tone="bg-[#d9f99d]" />
-        <StatCard icon={<UsersRound />} label="Total Users" value={Object.values(people).filter(p => p.role === 'user').length.toString()} tone="bg-[#fecdd3]" />
+        <StatCard icon={<FolderOpen />} label="Visible records" value={certifications.length.toString()} />
+        <StatCard icon={<MessageSquareText />} label="Reviews written" value={reviewedCount.toString()} />
+        <StatCard icon={<UsersRound />} label="Total Users" value={Object.values(people).filter(p => p.role === 'user').length.toString()} />
       </div>
-      <div className="mt-8 rounded-[2.5rem] border-2 border-slate-950 bg-white p-5 pl-8 shadow-[10px_10px_0_#3654ff]">
+      <div className="mt-8 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-2xl font-black">Submissions</h2>
@@ -889,7 +889,7 @@ function AdminDashboard({ admin, certifications, people, query, setQuery, review
                     <p className="font-black text-lg">{person?.name || 'Unknown User'}</p>
                     <p className="text-sm text-slate-500">{person?.department} · {person?.email}</p>
                   </div>
-                  <span className="ml-auto rounded-full bg-[#f7c948] px-3 py-1 text-xs font-black border-2 border-slate-950">
+                  <span className="ml-auto rounded-full bg-[#3654ff]/10 px-3 py-1 text-xs font-bold text-[#3654ff] border border-[#3654ff]/20">
                     {certs.length} {certs.length === 1 ? 'Entry' : 'Entries'}
                   </span>
                 </div>
@@ -935,7 +935,7 @@ function AdminDashboard({ admin, certifications, people, query, setQuery, review
 
 function DashboardHeader({ icon, eyebrow, title, subtitle, action }: { icon: ReactNode; eyebrow: string; title: string; subtitle: string; action: ReactNode }) {
   return (
-    <div className="rounded-[2.5rem] border-2 border-slate-950 bg-white p-6 shadow-[10px_10px_0_#111827]">
+    <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
       <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-4">
           <div className="grid h-16 w-16 place-items-center rounded-3xl bg-[#f7c948] text-slate-950">{icon}</div>
@@ -951,12 +951,12 @@ function DashboardHeader({ icon, eyebrow, title, subtitle, action }: { icon: Rea
   )
 }
 
-function StatCard({ icon, label, value, tone }: { icon: ReactNode; label: string; value: string; tone: string }) {
+function StatCard({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return (
-    <div className={`${tone} rounded-[2rem] border-2 border-slate-950 p-5 shadow-[6px_6px_0_#111827]`}>
-      <div className="mb-4 grid h-11 w-11 place-items-center rounded-2xl bg-white">{icon}</div>
-      <p className="text-sm font-black uppercase tracking-wide text-slate-600">{label}</p>
-      <p className="text-3xl font-black">{value}</p>
+    <div className="bg-white rounded-[1.5rem] border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow">
+      <div className="mb-4 grid h-11 w-11 place-items-center rounded-2xl bg-[#3654ff]/10 text-[#3654ff]">{icon}</div>
+      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">{label}</p>
+      <p className="text-3xl font-black text-slate-900">{value}</p>
     </div>
   )
 }
@@ -1149,9 +1149,17 @@ function CertificationGrid({ certifications, onView, onUpload, onRemove, onEdit,
 
 function StatusPill({ reviewed, delayed }: { reviewed: boolean; delayed?: boolean }) {
   if (delayed && !reviewed) {
-    return <span className="inline-flex w-fit rounded-full border-2 border-slate-950 px-3 py-1 text-xs font-black bg-red-400">Delayed</span>
+    return <span className="inline-flex w-fit rounded-full px-3 py-1 text-xs font-bold bg-red-100 text-red-700 border border-red-200">Delayed</span>
   }
-  return <span className={`inline-flex w-fit rounded-full border-2 border-slate-950 px-3 py-1 text-xs font-black ${reviewed ? 'bg-[#d9f99d]' : 'bg-[#f7c948]'}`}>{reviewed ? 'Reviewed' : 'Pending'}</span>
+  return (
+    <span className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-bold ${
+      reviewed 
+        ? 'bg-green-100 text-green-700 border border-green-200' 
+        : 'bg-yellow-100 text-yellow-700 border border-yellow-200'
+    }`}>
+      {reviewed ? 'Reviewed' : 'Pending'}
+    </span>
+  )
 }
 
 const ORGANIZATION_DATA: Record<string, { courses: string[]; bestFor: string }> = {
@@ -1459,7 +1467,7 @@ function AddCertificationDialog({ form, setForm, error, onClose, onSubmit, isEdi
           }} />
         </label>
         {error && <p className="rounded-2xl bg-red-100 px-4 py-3 text-sm font-black text-red-700">{error}</p>}
-        <button onClick={onSubmit} className="w-full rounded-2xl bg-[#3654ff] px-6 py-4 font-black text-white shadow-[5px_5px_0_#111827]">{isEdit ? 'Save changes' : 'Submit certificate'}</button>
+        <button onClick={onSubmit} className="w-full rounded-xl bg-[#3654ff] px-6 py-4 font-bold text-white shadow-sm hover:bg-[#2541d8] transition">{isEdit ? 'Save changes' : 'Submit certificate'}</button>
       </div>
     </Modal>
   );
@@ -1519,7 +1527,7 @@ function ReviewDialog({ cert, reviewText, setReviewText, onClose, onSave, people
             <textarea value={reviewText} onChange={(event) => setReviewText(event.target.value)} rows={5} className="w-full rounded-2xl border-2 border-slate-200 bg-white p-4 font-semibold outline-none focus:border-[#3654ff]" placeholder="Add notes to this certification..." />
           </>
         )}
-        <button onClick={onSave} className="w-full rounded-2xl bg-slate-950 px-6 py-4 font-black text-white shadow-[5px_5px_0_#f7c948]">
+        <button onClick={onSave} className="w-full rounded-xl bg-[#3654ff] px-6 py-4 font-bold text-white shadow-sm hover:bg-[#2541d8] transition">
           {isAdmin ? (cert.admin_review ? "Update feedback" : "Save feedback") : "Save notes"}
         </button>
       </div>
@@ -1561,7 +1569,7 @@ function TextInput({ label, value, onChange, placeholder, type = 'text', min }: 
 function Modal({ title, icon, children, onClose }: { title: string; icon: ReactNode; children: ReactNode; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/70 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-xl rounded-[2.5rem] border-2 border-slate-950 bg-[#fffaf0] p-6 shadow-[12px_12px_0_#111827] max-h-[90vh] flex flex-col">
+      <div className="w-full max-w-xl rounded-[2rem] border border-slate-200 bg-white p-6 shadow-lg max-h-[90vh] flex flex-col">
         <div className="mb-6 flex items-center justify-between gap-4 flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#f7c948]">{icon}</div>
@@ -1580,7 +1588,7 @@ function Modal({ title, icon, children, onClose }: { title: string; icon: ReactN
 function DocumentViewer({ cert, onClose }: { cert: Certification; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/70 p-4 backdrop-blur-sm">
-      <div className="relative w-full max-w-4xl h-[80vh] rounded-[2.5rem] border-2 border-slate-950 bg-[#fffaf0] p-6 shadow-[12px_12px_0_#111827] flex flex-col">
+      <div className="relative w-full max-w-4xl h-[80vh] rounded-[2rem] border border-slate-200 bg-white p-6 shadow-lg flex flex-col">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-2xl font-black">{cert.title}</h2>
           <button onClick={onClose} className="rounded-full bg-white p-2 text-slate-700 hover:bg-slate-950 hover:text-white"><X /></button>
