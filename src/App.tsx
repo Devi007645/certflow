@@ -230,6 +230,22 @@ function App() {
     setReviewText('')
   }
 
+  const handleUploadDocument = (certId: number, fileName: string, fileData: string) => {
+    setCertifications(items =>
+      items.map(cert =>
+        cert.id === certId ? { ...cert, fileName, file_url: fileData } : cert
+      )
+    )
+  }
+
+  const handleRemoveDocument = (certId: number) => {
+    setCertifications(items =>
+      items.map(cert =>
+        cert.id === certId ? { ...cert, fileName: '', file_url: '' } : cert
+      )
+    )
+  }
+
   return (
     <main className="min-h-screen bg-[#f7f3ea] text-slate-950">
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
@@ -240,15 +256,15 @@ function App() {
 
       <header className="sticky top-0 z-40 border-b border-slate-900/10 bg-[#f7f3ea]/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          <button onClick={() => setScreen('landing')} className="flex items-center gap-3">
-            <span className="grid h-12 w-12 place-items-center rounded-2xl bg-slate-950 text-[#f7c948] shadow-[6px_6px_0_#f7c948]">
-              <ShieldCheck className="h-6 w-6" />
-            </span>
-            <span className="text-left">
-              <span className="block text-xl font-black tracking-tight">CertFlow</span>
-              <span className="block text-xs font-semibold text-slate-500">Credential review workspace</span>
-            </span>
-          </button>
+              <div className="flex items-center gap-3">
+                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-slate-950 text-[#f7c948] shadow-[6px_6px_0_#f7c948]">
+                  <ShieldCheck className="h-6 w-6" />
+                </span>
+                <span className="text-left">
+                  <span className="block text-xl font-black tracking-tight">CertFlow</span>
+                  <span className="block text-xs font-semibold text-slate-500">Credential review workspace</span>
+                </span>
+              </div>
           {activeUser && screen !== 'login' && screen !== 'signup' && (
             <nav className="hidden items-center gap-2 rounded-full border border-slate-900/10 bg-white/70 p-1 shadow-sm md:flex">
               {activeUser.role === 'user' && (
@@ -281,16 +297,25 @@ function App() {
       <div className="relative z-10">
         {screen === 'landing' && <LandingPage onLogin={() => setScreen('login')} onSignup={() => setScreen('signup')} />}
         {(screen === 'login' || screen === 'signup') && <AuthPanel mode={screen} onLogin={handleLogin} onSignup={handleSignup} onSwitchMode={(m) => setScreen(m)} />}
-        {screen === 'user' && activeUser && activeUser.role === 'user' && <UserDashboard user={activeUser} certifications={myCertifications} onAdd={() => setIsModalOpen(true)} onView={setViewingCert} />}
+        {screen === 'user' && activeUser && activeUser.role === 'user' && (
+          <UserDashboard 
+            user={activeUser} 
+            certifications={myCertifications} 
+            onAdd={() => setIsModalOpen(true)} 
+            onView={setViewingCert}
+            onUpload={handleUploadDocument}
+            onRemove={handleRemoveDocument}
+          />
+        )}
         {screen === 'admin' && activeUser && activeUser.role === 'admin' && (
           <AdminDashboard
             admin={activeUser}
-            certifications={activeUser.role === 'admin' ? filteredCertifications : filteredCertifications.filter(c => c.user_id === activeUser.id)}
+            certifications={filteredCertifications.filter(c => c.fileName)}
             people={peopleState}
             query={query}
             setQuery={setQuery}
-            reviewedCount={reviewedCount}
-            pendingCount={pendingCount}
+            reviewedCount={certifications.filter(c => c.fileName && c.admin_review).length}
+            pendingCount={certifications.filter(c => c.fileName && !c.admin_review).length}
             onReview={(cert) => {
               setSelectedCert(cert)
               setReviewText(activeUser.role === 'admin' ? cert.admin_review : (cert.notes || ''))
@@ -567,7 +592,7 @@ function AuthPanel({ mode, onLogin, onSignup, onSwitchMode }: { mode: 'login' | 
   )
 }
 
-function UserDashboard({ user, certifications, onAdd, onView }: { user: Profile; certifications: Certification[]; onAdd: () => void; onView: (cert: Certification) => void }) {
+function UserDashboard({ user, certifications, onAdd, onView, onUpload, onRemove }: { user: Profile; certifications: Certification[]; onAdd: () => void; onView: (cert: Certification) => void; onUpload: (certId: number, fileName: string, fileData: string) => void; onRemove: (certId: number) => void }) {
   return (
     <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <DashboardHeader
@@ -582,7 +607,7 @@ function UserDashboard({ user, certifications, onAdd, onView }: { user: Profile;
         <StatCard icon={<CheckCircle2 />} label="Approved / reviewed" value={certifications.filter((cert) => cert.admin_review).length.toString()} tone="bg-[#d9f99d]" />
         <StatCard icon={<CalendarDays />} label="Newest upload" value={certifications[0]?.created_at ?? 'None'} tone="bg-[#fecdd3]" />
       </div>
-      <CertificationGrid certifications={certifications} onView={onView} />
+      <CertificationGrid certifications={certifications} onView={onView} onUpload={onUpload} onRemove={onRemove} />
     </section>
   )
 }
@@ -687,7 +712,7 @@ function StatCard({ icon, label, value, tone }: { icon: ReactNode; label: string
   )
 }
 
-function CertificationGrid({ certifications, onView }: { certifications: Certification[]; onView: (cert: Certification) => void }) {
+function CertificationGrid({ certifications, onView, onUpload, onRemove }: { certifications: Certification[]; onView: (cert: Certification) => void; onUpload: (certId: number, fileName: string, fileData: string) => void; onRemove: (certId: number) => void }) {
   return (
     <div className="mt-8 grid gap-5 lg:grid-cols-2">
       {certifications.map((cert) => (
@@ -714,10 +739,33 @@ function CertificationGrid({ certifications, onView }: { certifications: Certifi
             </div>
           )}
           <div className="mt-5 flex flex-wrap gap-2">
-            {cert.fileName && (
-              <button onClick={() => onView(cert)} className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2 text-sm font-black text-white">
-                <Eye className="h-4 w-4" /> View
-              </button>
+            {cert.fileName ? (
+              <>
+                <button onClick={() => onView(cert)} className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2 text-sm font-black text-white">
+                  <Eye className="h-4 w-4" /> View
+                </button>
+                <button onClick={() => onRemove(cert.id)} className="inline-flex items-center gap-2 rounded-full bg-red-100 px-4 py-2 text-sm font-black text-red-700 hover:bg-red-200">
+                  <X className="h-4 w-4" /> Remove Document
+                </button>
+              </>
+            ) : (
+              <label className="inline-flex items-center gap-2 rounded-full bg-[#bfdbfe] px-4 py-2 text-sm font-black text-slate-700 hover:bg-[#a5c4f7] cursor-pointer">
+                <UploadCloud className="h-4 w-4" /> Upload Document
+                <input type="file" accept=".pdf" className="hidden" onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) {
+                    if (file.size > 5 * 1024 * 1024) {
+                      alert('File size exceeds 5MB limit');
+                      return;
+                    }
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                      onUpload(cert.id, file.name, reader.result as string);
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }} />
+              </label>
             )}
             {cert.admin_review ? <span className="rounded-full bg-[#d9f99d] px-4 py-2 text-sm font-black">{cert.admin_review}</span> : <span className="rounded-full bg-[#fef3c7] px-4 py-2 text-sm font-black">Awaiting admin feedback</span>}
           </div>
