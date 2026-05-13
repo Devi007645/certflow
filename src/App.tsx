@@ -19,6 +19,7 @@ import {
   LogIn,
   MessageSquareText,
   Plus,
+  RefreshCw,
   Search,
   ShieldCheck,
   UploadCloud,
@@ -83,7 +84,16 @@ const certSchema = z.object({
 
 function App() {
   const [screen, setScreen] = useState<Screen>('landing')
-  const { data: certifications = [] } = useCertifications()
+  const [isTransitioning, setIsTransitioning] = useState(false)
+  const { data: certifications = [], refetch } = useCertifications()
+
+  const navigateTo = (targetScreen: Screen) => {
+    setIsTransitioning(true)
+    setTimeout(() => {
+      setScreen(targetScreen)
+      setIsTransitioning(false)
+    }, 800)
+  }
   const createCertificationMutation = useCreateCertification()
   const updateCertificationMutation = useUpdateCertification()
   const [peopleState, setPeopleState] = useState<Record<string, Profile>>(people)
@@ -181,7 +191,7 @@ function App() {
 
   const openDashboard = (user: Profile) => {
     setActiveUser(user)
-    setScreen(user.role === 'admin' ? 'admin' : 'user')
+    navigateTo(user.role === 'admin' ? 'admin' : 'user')
   }
 
   const handleLogin = (email: string) => {
@@ -318,10 +328,10 @@ function App() {
           {activeUser && screen !== 'login' && screen !== 'signup' && (
             <nav className="hidden items-center gap-2 rounded-full border border-slate-900/10 bg-white/70 p-1 shadow-sm md:flex">
               {activeUser.role === 'user' && (
-                <button onClick={() => setScreen('user')} className="rounded-full px-4 py-2 text-sm font-bold hover:bg-slate-950 hover:text-white">My records</button>
+                <button onClick={() => navigateTo('user')} className="rounded-full px-4 py-2 text-sm font-bold hover:bg-slate-950 hover:text-white">My records</button>
               )}
               {activeUser.role === 'admin' && (
-                <button onClick={() => setScreen('admin')} className="rounded-full px-4 py-2 text-sm font-bold hover:bg-slate-950 hover:text-white">Review center</button>
+                <button onClick={() => navigateTo('admin')} className="rounded-full px-4 py-2 text-sm font-bold hover:bg-slate-950 hover:text-white">Review center</button>
               )}
             </nav>
           )}
@@ -330,14 +340,14 @@ function App() {
               <>
                 <button onClick={() => {
                   setActiveUser(null);
-                  setScreen('landing');
+                  navigateTo('landing');
                 }} className="hidden rounded-full px-4 py-2 text-sm font-black text-slate-700 hover:bg-white sm:inline-flex">Log out</button>
-                <button onClick={() => setScreen('signup')} className="rounded-full bg-[#3654ff] px-5 py-2.5 text-sm font-black text-white shadow-[4px_4px_0_#111827] transition hover:-translate-y-0.5">Sign up</button>
+                <button onClick={() => navigateTo('signup')} className="rounded-full bg-[#3654ff] px-5 py-2.5 text-sm font-black text-white shadow-[4px_4px_0_#111827] transition hover:-translate-y-0.5">Sign up</button>
               </>
             ) : (
               <>
-                <button onClick={() => setScreen('login')} className="hidden rounded-full px-4 py-2 text-sm font-black text-slate-700 hover:bg-white sm:inline-flex">Login</button>
-                <button onClick={() => setScreen('signup')} className="rounded-full bg-[#3654ff] px-5 py-2.5 text-sm font-black text-white shadow-[4px_4px_0_#111827] transition hover:-translate-y-0.5">Sign up</button>
+                <button onClick={() => navigateTo('login')} className="hidden rounded-full px-4 py-2 text-sm font-black text-slate-700 hover:bg-white sm:inline-flex">Login</button>
+                <button onClick={() => navigateTo('signup')} className="rounded-full bg-[#3654ff] px-5 py-2.5 text-sm font-black text-white shadow-[4px_4px_0_#111827] transition hover:-translate-y-0.5">Sign up</button>
               </>
             )}
           </div>
@@ -345,8 +355,8 @@ function App() {
       </header>
 
       <div className="relative z-10">
-        {screen === 'landing' && <LandingPage onLogin={() => setScreen('login')} onSignup={() => setScreen('signup')} />}
-        {(screen === 'login' || screen === 'signup') && <AuthPanel mode={screen} onLogin={handleLogin} onSignup={handleSignup} onSwitchMode={(m) => setScreen(m)} />}
+        {screen === 'landing' && <LandingPage onLogin={() => navigateTo('login')} onSignup={() => navigateTo('signup')} />}
+        {(screen === 'login' || screen === 'signup') && <AuthPanel mode={screen} onLogin={handleLogin} onSignup={handleSignup} onSwitchMode={(m) => navigateTo(m)} />}
         {screen === 'user' && activeUser && activeUser.role === 'user' && (
           <UserDashboard 
             user={activeUser} 
@@ -355,6 +365,7 @@ function App() {
             onView={setViewingCert}
             onUpload={handleUploadDocument}
             onRemove={handleRemoveDocument}
+            onRefresh={refetch}
           />
         )}
         {screen === 'admin' && activeUser && activeUser.role === 'admin' && (
@@ -371,6 +382,7 @@ function App() {
               setReviewText(activeUser.role === 'admin' ? cert.admin_review : (cert.notes || ''))
             }}
             onView={setViewingCert}
+            onRefresh={refetch}
           />
         )}
       </div>
@@ -400,7 +412,38 @@ function App() {
       {viewingCert && (
         <DocumentViewer cert={viewingCert} onClose={() => setViewingCert(null)} />
       )}
+      {isTransitioning && <LoadingOverlay isOnline={isOnline} />}
     </main>
+  )
+}
+
+function LoadingOverlay({ isOnline }: { isOnline: boolean }) {
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#f7f3ea]/90 backdrop-blur-sm">
+      <div className="rounded-[2.5rem] border-2 border-slate-950 bg-white p-10 shadow-[12px_12px_0_#111827] flex flex-col items-center gap-6 max-w-sm w-full mx-4">
+        <div className="relative">
+          <div className="h-16 w-16 animate-spin rounded-full border-4 border-slate-200 border-t-[#3654ff]"></div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="h-8 w-8 rounded-full bg-slate-950"></div>
+          </div>
+        </div>
+        <div className="text-center">
+          <h2 className="text-2xl font-black">CertFlow</h2>
+          <p className="text-sm font-bold text-slate-500 mt-1">Loading next screen...</p>
+        </div>
+        <div className={`w-full rounded-2xl border-2 border-slate-950 p-3 text-sm font-black flex items-center justify-center gap-2 ${isOnline ? 'bg-[#d9f99d]' : 'bg-[#fecdd3]'}`}>
+          {isOnline ? (
+            <>
+              <ShieldCheck className="h-4 w-4" /> Network Connected
+            </>
+          ) : (
+            <>
+              <EyeOff className="h-4 w-4" /> Offline Mode
+            </>
+          )}
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -642,7 +685,7 @@ function AuthPanel({ mode, onLogin, onSignup, onSwitchMode }: { mode: 'login' | 
   )
 }
 
-function UserDashboard({ user, certifications, onAdd, onView, onUpload, onRemove }: { user: Profile; certifications: Certification[]; onAdd: () => void; onView: (cert: Certification) => void; onUpload: (certId: number, fileName: string, fileData: string) => void; onRemove: (certId: number) => void }) {
+function UserDashboard({ user, certifications, onAdd, onView, onUpload, onRemove, onRefresh }: { user: Profile; certifications: Certification[]; onAdd: () => void; onView: (cert: Certification) => void; onUpload: (certId: number, fileName: string, fileData: string) => void; onRemove: (certId: number) => void; onRefresh: () => void }) {
   return (
     <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <DashboardHeader
@@ -650,7 +693,14 @@ function UserDashboard({ user, certifications, onAdd, onView, onUpload, onRemove
         eyebrow="Employee workspace"
         title={`Welcome back, ${user.name}`}
         subtitle={`${user.department} · ${user.email}`}
-        action={<button onClick={onAdd} className="inline-flex items-center gap-2 rounded-2xl bg-[#3654ff] px-5 py-3 font-black text-white shadow-[5px_5px_0_#111827]"><Plus className="h-5 w-5" /> Add certificate</button>}
+        action={
+          <div className="flex items-center gap-3">
+            <button onClick={onRefresh} className="inline-flex items-center justify-center h-12 w-12 rounded-2xl border-2 border-slate-950 bg-white hover:bg-slate-50 shadow-[4px_4px_0_#111827] transition hover:-translate-y-0.5">
+              <RefreshCw className="h-5 w-5" />
+            </button>
+            <button onClick={onAdd} className="inline-flex items-center gap-2 rounded-2xl bg-[#3654ff] px-5 py-3 font-black text-white shadow-[5px_5px_0_#111827] transition hover:-translate-y-0.5"><Plus className="h-5 w-5" /> Add certificate</button>
+          </div>
+        }
       />
       <div className="mt-8 grid gap-4 md:grid-cols-3">
         <StatCard icon={<FileText />} label="My submissions" value={certifications.length.toString()} tone="bg-[#bfdbfe]" />
@@ -662,7 +712,7 @@ function UserDashboard({ user, certifications, onAdd, onView, onUpload, onRemove
   )
 }
 
-function AdminDashboard({ admin, certifications, people, query, setQuery, reviewedCount, pendingCount, onReview, onView }: { admin: Profile; certifications: Certification[]; people: Record<string, Profile>; query: string; setQuery: (value: string) => void; reviewedCount: number; pendingCount: number; onReview: (cert: Certification) => void; onView: (cert: Certification) => void }) {
+function AdminDashboard({ admin, certifications, people, query, setQuery, reviewedCount, pendingCount, onReview, onView, onRefresh }: { admin: Profile; certifications: Certification[]; people: Record<string, Profile>; query: string; setQuery: (value: string) => void; reviewedCount: number; pendingCount: number; onReview: (cert: Certification) => void; onView: (cert: Certification) => void; onRefresh: () => void }) {
   const groupedCerts = useMemo(() => {
     const groups: Record<string, Certification[]> = {}
     certifications.forEach(cert => {
@@ -679,7 +729,14 @@ function AdminDashboard({ admin, certifications, people, query, setQuery, review
         eyebrow="Admin review center"
         title="Team certification queue"
         subtitle={`${admin.name} · ${admin.department}`}
-        action={<div className="inline-flex items-center gap-2 rounded-2xl border-2 border-slate-950 bg-[#f7c948] px-5 py-3 font-black"><Bell className="h-5 w-5" /> {pendingCount} pending</div>}
+        action={
+          <div className="flex items-center gap-3">
+            <button onClick={onRefresh} className="inline-flex items-center justify-center h-12 w-12 rounded-2xl border-2 border-slate-950 bg-white hover:bg-slate-50 shadow-[4px_4px_0_#111827] transition hover:-translate-y-0.5">
+              <RefreshCw className="h-5 w-5" />
+            </button>
+            <div className="inline-flex items-center gap-2 rounded-2xl border-2 border-slate-950 bg-[#f7c948] px-5 py-3 font-black"><Bell className="h-5 w-5" /> {pendingCount} pending</div>
+          </div>
+        }
       />
       <div className="mt-8 grid gap-4 md:grid-cols-3">
         <StatCard icon={<FolderOpen />} label="Visible records" value={certifications.length.toString()} tone="bg-[#bfdbfe]" />
