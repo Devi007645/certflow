@@ -107,14 +107,14 @@ function App() {
   const [reviewText, setReviewText] = useState('')
   const [emoji, setEmoji] = useState('')
   const [editingCert, setEditingCert] = useState<Certification | null>(null)
-  
+
   const { form, updateForm: setForm } = useRealtimeForm(activeUser?.id)
   const saveStatus = useFormStore((state) => state.saveStatus)
   const resetForm = useFormStore((state) => state.resetForm)
-  
+
   const [viewingCert, setViewingCert] = useState<Certification | null>(null)
   const [formError, setFormError] = useState('')
-  
+
   const handleDeleteCertification = async (id: number) => {
     if (window.confirm('Are you sure you want to delete this certification?')) {
       try {
@@ -313,7 +313,7 @@ function App() {
 
   const handleSaveReview = async () => {
     if (!selectedCert) return
-    
+
     const updates: any = {}
     if (activeUser?.role === 'admin') {
       updates.admin_review = reviewText.trim()
@@ -358,60 +358,60 @@ function App() {
 
       <header className="sticky top-0 z-40 border-b border-slate-900/10 bg-[#f7f3ea]/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-              <div className="flex items-center gap-4">
-                <svg width="64" height="64" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
-                  <defs>
-                    <linearGradient id="brandGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stopColor="#38bdf8" />
-                      <stop offset="50%" stopColor="#2563eb" />
-                      <stop offset="100%" stopColor="#7c3aed" />
-                    </linearGradient>
-                  </defs>
-                  {/* Ribbons */}
-                  <path d="M35 65 L25 90 L40 80 L50 90 L45 65 Z" fill="url(#brandGradient)" opacity="0.9"/>
-                  <path d="M65 65 L75 90 L60 80 L50 90 L55 65 Z" fill="url(#brandGradient)" opacity="0.9"/>
-                  {/* Badge */}
-                  <circle cx="50" cy="45" r="25" fill="url(#brandGradient)" />
-                  {/* Checkmark */}
-                  <path d="M40 45 L47 52 L62 35" stroke="white" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                <span className="text-left">
-                  <span className="block text-3xl font-black tracking-tight flex items-center">
-                    <span className="text-transparent bg-clip-text bg-gradient-to-br from-[#38bdf8] to-[#7c3aed]">P</span>
-                    <span>roofly</span>
-                  </span>
-                  <span className="block text-sm font-semibold text-slate-500">Credential review workspace</span>
+          <div className="flex items-center gap-4">
+            <svg width="64" height="64" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
+              <defs>
+                <linearGradient id="brandGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#38bdf8" />
+                  <stop offset="50%" stopColor="#2563eb" />
+                  <stop offset="100%" stopColor="#7c3aed" />
+                </linearGradient>
+              </defs>
+              {/* Ribbons */}
+              <path d="M35 65 L25 90 L40 80 L50 90 L45 65 Z" fill="url(#brandGradient)" opacity="0.9" />
+              <path d="M65 65 L75 90 L60 80 L50 90 L55 65 Z" fill="url(#brandGradient)" opacity="0.9" />
+              {/* Badge */}
+              <circle cx="50" cy="45" r="25" fill="url(#brandGradient)" />
+              {/* Checkmark */}
+              <path d="M40 45 L47 52 L62 35" stroke="white" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span className="text-left">
+              <span className="block text-3xl font-black tracking-tight flex items-center">
+                <span className="text-transparent bg-clip-text bg-gradient-to-br from-[#38bdf8] to-[#7c3aed]">P</span>
+                <span>roofly</span>
+              </span>
+              <span className="block text-sm font-semibold text-slate-500">Credential review workspace</span>
+            </span>
+
+            {/* Status Indicators */}
+            <div className="ml-4 flex items-center gap-2 text-xs font-bold">
+              {!isOnline && (
+                <span className="rounded-full bg-red-100 px-2 py-1 text-red-700 border border-red-300 flex items-center gap-1">
+                  <EyeOff className="h-3 w-3" /> Offline
                 </span>
-                
-                {/* Status Indicators */}
-                <div className="ml-4 flex items-center gap-2 text-xs font-bold">
-                  {!isOnline && (
-                    <span className="rounded-full bg-red-100 px-2 py-1 text-red-700 border border-red-300 flex items-center gap-1">
-                      <EyeOff className="h-3 w-3" /> Offline
-                    </span>
-                  )}
-                  {isOnline && (
-                    <span className="rounded-full bg-green-100 px-2 py-1 text-green-700 border border-green-300 flex items-center gap-1">
-                      <ShieldCheck className="h-3 w-3" /> Online
-                    </span>
-                  )}
-                  {saveStatus === 'saving' && (
-                    <span className="rounded-full bg-yellow-100 px-2 py-1 text-yellow-700 border border-yellow-300 flex items-center gap-1">
-                      <UploadCloud className="h-3 w-3 animate-pulse" /> Saving...
-                    </span>
-                  )}
-                  {saveStatus === 'saved' && (
-                    <span className="rounded-full bg-blue-100 px-2 py-1 text-blue-700 border border-blue-300 flex items-center gap-1">
-                      <CheckCircle2 className="h-3 w-3" /> Saved
-                    </span>
-                  )}
-                  {saveStatus === 'error' && (
-                    <span className="rounded-full bg-red-100 px-2 py-1 text-red-700 border border-red-300 flex items-center gap-1">
-                      <X className="h-3 w-3" /> Save Error
-                    </span>
-                  )}
-                </div>
-              </div>
+              )}
+              {isOnline && (
+                <span className="rounded-full bg-green-100 px-2 py-1 text-green-700 border border-green-300 flex items-center gap-1">
+                  <ShieldCheck className="h-3 w-3" /> Online
+                </span>
+              )}
+              {saveStatus === 'saving' && (
+                <span className="rounded-full bg-yellow-100 px-2 py-1 text-yellow-700 border border-yellow-300 flex items-center gap-1">
+                  <UploadCloud className="h-3 w-3 animate-pulse" /> Saving...
+                </span>
+              )}
+              {saveStatus === 'saved' && (
+                <span className="rounded-full bg-blue-100 px-2 py-1 text-blue-700 border border-blue-300 flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3" /> Saved
+                </span>
+              )}
+              {saveStatus === 'error' && (
+                <span className="rounded-full bg-red-100 px-2 py-1 text-red-700 border border-red-300 flex items-center gap-1">
+                  <X className="h-3 w-3" /> Save Error
+                </span>
+              )}
+            </div>
+          </div>
           <div className="flex items-center gap-2">
             {activeUser && screen !== 'login' && screen !== 'signup' ? (
               <>
@@ -435,10 +435,12 @@ function App() {
         {screen === 'landing' && <LandingPage onLogin={() => navigateTo('login')} onSignup={() => navigateTo('signup')} />}
         {(screen === 'login' || screen === 'signup') && <AuthPanel mode={screen} onLogin={handleLogin} onSignup={handleSignup} onSwitchMode={(m) => navigateTo(m)} />}
         {screen === 'user' && activeUser && activeUser.role === 'user' && (
-          <UserDashboard 
-            user={activeUser} 
-            certifications={myCertifications} 
-            onAdd={() => setIsModalOpen(true)} 
+          <UserDashboard
+            user={activeUser}
+            certifications={myCertifications}
+            allCertifications={certifications}
+            people={peopleState}
+            onAdd={() => setIsModalOpen(true)}
             onView={setViewingCert}
             onUpload={handleUploadDocument}
             onRemove={handleRemoveDocument}
@@ -590,7 +592,7 @@ function AuthPanel({ mode, onLogin, onSignup, onSwitchMode }: { mode: 'login' | 
         setError('Name is required')
         return
       }
-      if (role === 'admin' && secretCode !== 'KING123') {
+      if (role === 'admin' && secretCode !== 'BIPROS_@_ADMIN_123') {
         setError('Invalid admin secret code')
         return
       }
@@ -758,7 +760,7 @@ function AuthPanel({ mode, onLogin, onSignup, onSwitchMode }: { mode: 'login' | 
   )
 }
 
-function UserDashboard({ user, certifications, onAdd, onView, onUpload, onRemove, onRefresh, isRefreshing, onEdit, onDelete }: { user: Profile; certifications: Certification[]; onAdd: () => void; onView: (cert: Certification) => void; onUpload: (certId: number, fileName: string, fileData: string) => void; onRemove: (certId: number) => void; onRefresh: () => void; isRefreshing: boolean; onEdit: (cert: Certification) => void; onDelete: (id: number) => void }) {
+function UserDashboard({ user, certifications, allCertifications, people, onAdd, onView, onUpload, onRemove, onRefresh, isRefreshing, onEdit, onDelete }: { user: Profile; certifications: Certification[]; allCertifications: Certification[]; people: Record<string, Profile>; onAdd: () => void; onView: (cert: Certification) => void; onUpload: (certId: number, fileName: string, fileData: string) => void; onRemove: (certId: number) => void; onRefresh: () => void; isRefreshing: boolean; onEdit: (cert: Certification) => void; onDelete: (id: number) => void }) {
   return (
     <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <DashboardHeader
@@ -782,6 +784,58 @@ function UserDashboard({ user, certifications, onAdd, onView, onUpload, onRemove
       </div>
       <div className={`${isRefreshing ? 'opacity-50 pointer-events-none' : ''} transition-opacity`}>
         <CertificationGrid certifications={certifications} onView={onView} onUpload={onUpload} onRemove={onRemove} onEdit={onEdit} onDelete={onDelete} />
+      </div>
+
+      <div className="mt-12 rounded-[2.5rem] border-2 border-slate-950 bg-white p-5 pl-8 shadow-[10px_10px_0_#f7c948]">
+        <div className="mb-5">
+          <h2 className="text-2xl font-black">Team Progress</h2>
+          <p className="text-sm font-medium text-slate-500">View what other employees are working on.</p>
+        </div>
+        <div className="grid gap-6">
+          {Object.entries(
+            allCertifications.reduce((groups, cert) => {
+              if (cert.user_id !== user.id) {
+                if (!groups[cert.user_id]) groups[cert.user_id] = []
+                groups[cert.user_id].push(cert)
+              }
+              return groups
+            }, {} as Record<string, Certification[]>)
+          ).map(([userId, certs]) => {
+            const person = people[userId]
+            return (
+              <div key={userId} className="rounded-3xl border-2 border-slate-200 bg-[#f8fafc] p-5">
+                <div className="flex gap-3 mb-4 items-center">
+                  <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-slate-950 text-white font-black text-xl">{person?.name?.[0]?.toUpperCase() || '?'}</div>
+                  <div>
+                    <p className="font-black text-lg">{person?.name || 'Unknown User'}</p>
+                    <p className="text-sm text-slate-500">{person?.department}</p>
+                  </div>
+                  <span className="ml-auto rounded-full bg-[#bfdbfe] px-3 py-1 text-xs font-black border-2 border-slate-950">
+                    {certs.length} {certs.length === 1 ? 'Entry' : 'Entries'}
+                  </span>
+                </div>
+                <div className="grid gap-3">
+                  {certs.map((cert) => (
+                    <article key={cert.id} className="grid gap-4 rounded-2xl border-2 border-slate-100 bg-white p-4 lg:grid-cols-[1.2fr_1fr_auto] lg:items-center">
+                      <div>
+                        <p className="font-black">{cert.title}</p>
+                        <p className="text-sm text-slate-500">{cert.issuing_organization} · issued {cert.issue_date}</p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                        <StatusPill reviewed={Boolean(cert.admin_review)} delayed={cert.probable_completion_time ? new Date().toISOString().slice(0, 10) > cert.probable_completion_time : false} />
+                        {cert.fileName && (
+                          <button onClick={() => onView(cert)} className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-2 text-sm font-black text-slate-700 border border-slate-200" title="View document">
+                            <Eye className="h-4 w-4" /> View
+                          </button>
+                        )}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </div>
     </section>
   )
@@ -946,7 +1000,7 @@ function CertificationGrid({ certifications, onView, onUpload, onRemove, onEdit,
           <div className="grid gap-3">
             {certs.map((cert) => {
               const isReviewed = Boolean(cert.admin_review);
-              
+
               if (isReviewed) {
                 return (
                   <article key={cert.id} className="grid gap-4 rounded-2xl border-2 border-slate-100 bg-white p-4 lg:grid-cols-[1.5fr_1fr_1.5fr_auto] lg:items-center">
@@ -1330,8 +1384,8 @@ function AddCertificationDialog({ form, setForm, error, onClose, onSubmit, isEdi
                     setForm({ ...form, tags: newTags, title: newTitle });
                   }}
                   className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-bold border border-slate-950 transition-colors ${isSelected
-                      ? 'bg-green-400 text-slate-950'
-                      : 'bg-[#bfdbfe] text-slate-700 hover:bg-[#a5c4f7]'
+                    ? 'bg-green-400 text-slate-950'
+                    : 'bg-[#bfdbfe] text-slate-700 hover:bg-[#a5c4f7]'
                     }`}
                 >
                   {isSelected && <CheckCircle2 className="h-3 w-3 mr-1" />}
@@ -1377,17 +1431,17 @@ function AddCertificationDialog({ form, setForm, error, onClose, onSubmit, isEdi
           </div>
         </label>
 
-        <TextInput 
-          label="Issue date" 
-          type="date" 
-          value={form.issue_date} 
+        <TextInput
+          label="Issue date"
+          type="date"
+          value={form.issue_date}
           onChange={(value) => {
             const updates = { ...form, issue_date: value };
             if (form.probable_completion_time && form.probable_completion_time < value) {
               updates.probable_completion_time = value;
             }
             setForm(updates);
-          }} 
+          }}
         />
         <TextInput label="Probable Completion Time" type="date" value={form.probable_completion_time || ''} onChange={(value) => setForm({ ...form, probable_completion_time: value })} min={form.issue_date} />
         <label className="block cursor-pointer rounded-3xl border-2 border-dashed border-slate-950 bg-[#bfdbfe] p-6 text-center transition hover:bg-[#dbeafe]">
