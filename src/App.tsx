@@ -377,7 +377,7 @@ function App() {
               <path d="M40 45 L47 52 L62 35" stroke="white" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             <span className="text-left">
-              <span className="block text-3xl font-black tracking-tight flex items-center">
+              <span className="block text-2xl font-bold tracking-tight flex items-center">
                 <span className="text-transparent bg-clip-text bg-gradient-to-br from-[#38bdf8] to-[#7c3aed]">P</span>
                 <span>roofly</span>
               </span>
@@ -419,12 +419,12 @@ function App() {
                 <button onClick={() => {
                   setActiveUser(null);
                   navigateTo('landing');
-                }} className="hidden rounded-full px-4 py-2 text-sm font-black text-slate-700 hover:bg-white sm:inline-flex" title="Log out">Log out</button>
+                }} className="hidden rounded-full px-4 py-2 text-sm font-bold text-slate-700 hover:bg-white sm:inline-flex" title="Log out">Log out</button>
                 <button onClick={() => navigateTo('signup')} className="rounded-full bg-[#3654ff] px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-[#2541d8] transition" title="Create a new account">Sign up</button>
               </>
             ) : (
               <>
-                <button onClick={() => navigateTo('login')} className="hidden rounded-full px-4 py-2 text-sm font-black text-slate-700 hover:bg-white sm:inline-flex" title="Log in to your account">Login</button>
+                <button onClick={() => navigateTo('login')} className="hidden rounded-full px-4 py-2 text-sm font-bold text-slate-700 hover:bg-white sm:inline-flex" title="Log in to your account">Login</button>
                 <button onClick={() => navigateTo('signup')} className="rounded-full bg-[#3654ff] px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-[#2541d8] transition" title="Create a new account">Sign up</button>
               </>
             )}
@@ -527,10 +527,10 @@ function LandingPage({ onLogin, onSignup }: { onLogin: () => void; onSignup: () 
   return (
     <section className="mx-auto flex max-w-4xl flex-col items-center justify-center gap-10 px-4 py-12 sm:px-6 lg:px-8 lg:py-24 text-center">
       <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm lg:p-12 w-full">
-        <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-slate-950 bg-[#f7c948] px-4 py-2 text-sm font-black mx-auto">
+        <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-slate-950 bg-[#f7c948] px-4 py-2 text-sm font-bold mx-auto">
           <BadgeCheck className="h-4 w-4" /> Simple certificate tracking for teams
         </div>
-        <h1 className="mx-auto max-w-3xl text-5xl font-black leading-[0.95] tracking-tight sm:text-6xl lg:text-7xl">
+        <h1 className="mx-auto max-w-3xl text-3xl font-bold leading-tight tracking-tight sm:text-4xl lg:text-5xl">
           Collect, review, and approve credentials in one clean place.
         </h1>
         <p className="mt-6 mx-auto max-w-2xl text-lg leading-8 text-slate-650">
@@ -666,7 +666,7 @@ function AuthPanel({ mode, onLogin, onSignup, onSwitchMode }: { mode: 'login' | 
       <div className="grid overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm md:grid-cols-[0.8fr_1.2fr]">
         <div className="bg-slate-950 p-8 text-white">
           <div className="grid h-14 w-14 place-items-center rounded-2xl bg-[#f7c948] text-slate-950"><KeyRound /></div>
-          <h1 className="mt-8 text-4xl font-black capitalize">{mode}</h1>
+          <h1 className="mt-8 text-2xl font-bold capitalize">{mode}</h1>
           <p className="mt-3 text-slate-300">
             {mode === 'login' ? 'Welcome back! Sign in to continue.' : 'Create an account to start tracking credentials.'}
           </p>
@@ -678,8 +678,8 @@ function AuthPanel({ mode, onLogin, onSignup, onSwitchMode }: { mode: 'login' | 
         </div>
         <div className="p-6 sm:p-8">
           <div className="grid gap-5">
-            {success && <p className="rounded-2xl bg-green-100 px-4 py-3 text-sm font-black text-green-800">{success}</p>}
-            {error && <p className="rounded-2xl bg-red-100 px-4 py-3 text-sm font-black text-red-700">{error}</p>}
+            {success && <p className="rounded-2xl bg-green-100 px-4 py-3 text-sm font-bold text-green-800">{success}</p>}
+            {error && <p className="rounded-2xl bg-red-100 px-4 py-3 text-sm font-bold text-red-700">{error}</p>}
 
             {mode === 'signup' && (
               <TextInput label="Full Name" value={name} onChange={setName} placeholder="e.g. Alex Morgan" />
@@ -722,7 +722,7 @@ function AuthPanel({ mode, onLogin, onSignup, onSwitchMode }: { mode: 'login' | 
 
             {mode === 'signup' && (
               <div>
-                <p className="mb-2 text-sm font-black uppercase tracking-wide text-slate-500">Account Type</p>
+                <p className="mb-2 text-sm font-bold uppercase tracking-wide text-slate-500">Account Type</p>
                 <div className="grid grid-cols-2 gap-3">
                   {(['user', 'admin'] as Role[]).map((item) => (
                     <button key={item} onClick={() => setRole(item)} className={`rounded-xl border px-4 py-4 font-bold capitalize transition ${role === item ? 'bg-[#3654ff] text-white border-[#3654ff]' : 'bg-[#f8fafc] text-slate-700 border-slate-200 hover:bg-slate-50'}`}>
@@ -784,7 +784,7 @@ function UserDashboard({ user, certifications, allCertifications, people, onAdd,
 
       <div className="mt-12 rounded-[2rem] border border-[#3654ff]/40 bg-white p-6 shadow-sm">
         <div className="mb-5">
-          <h2 className="text-2xl font-black">Team Progress</h2>
+          <h2 className="text-lg font-bold">Team Progress</h2>
           <p className="text-sm font-medium text-slate-500">View what other employees are working on.</p>
         </div>
         <div className="grid gap-6">
@@ -801,9 +801,9 @@ function UserDashboard({ user, certifications, allCertifications, people, onAdd,
             return (
               <div key={userId} className="rounded-3xl border-2 border-slate-200 bg-[#f8fafc] p-5">
                 <div className="flex gap-3 mb-4 items-center">
-                  <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-slate-950 text-white font-black text-xl">{person?.name?.[0]?.toUpperCase() || '?'}</div>
+                  <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-slate-950 text-white font-bold text-xl">{person?.name?.[0]?.toUpperCase() || '?'}</div>
                   <div>
-                    <p className="font-black text-lg">{person?.name || 'Unknown User'}</p>
+                    <p className="font-bold text-lg">{person?.name || 'Unknown User'}</p>
                     <p className="text-sm text-slate-500">{person?.department}</p>
                   </div>
                   <span className="ml-auto rounded-full bg-[#3654ff]/10 px-3 py-1 text-xs font-bold text-[#3654ff] border border-[#3654ff]/20">
@@ -814,13 +814,13 @@ function UserDashboard({ user, certifications, allCertifications, people, onAdd,
                   {certs.map((cert) => (
                     <article key={cert.id} className="grid gap-4 rounded-2xl border border-[#3654ff]/20 bg-white p-4 lg:grid-cols-[1.2fr_1fr_auto] lg:items-center">
                       <div>
-                        <p className="font-black">{cert.title}</p>
+                        <p className="font-bold">{cert.title}</p>
                         <p className="text-sm text-slate-500">{cert.issuing_organization} · issued {cert.issue_date}</p>
                       </div>
                       <div className="flex flex-wrap items-center gap-2 lg:justify-end">
                         <StatusPill reviewed={Boolean(cert.admin_review)} delayed={cert.probable_completion_time ? new Date().toISOString().slice(0, 10) > cert.probable_completion_time : false} />
                         {cert.fileName && (
-                          <button onClick={() => onView(cert)} className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-2 text-sm font-black text-slate-700 border border-slate-200" title="View document">
+                          <button onClick={() => onView(cert)} className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-2 text-sm font-bold text-slate-700 border border-slate-200" title="View document">
                             <Eye className="h-4 w-4" /> View
                           </button>
                         )}
@@ -871,7 +871,7 @@ function AdminDashboard({ admin, certifications, people, query, setQuery, review
       <div className="mt-8 rounded-[2rem] border border-[#3654ff]/40 bg-white p-6 shadow-sm">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-2xl font-black">Submissions</h2>
+            <h2 className="text-lg font-bold">Submissions</h2>
             <p className="text-sm font-medium text-slate-500">Search by employee, department, certificate, issuer, or feedback.</p>
           </div>
           <div className="relative w-full sm:max-w-md">
@@ -885,9 +885,9 @@ function AdminDashboard({ admin, certifications, people, query, setQuery, review
             return (
               <div key={userId} className="rounded-3xl border-2 border-slate-200 bg-[#f8fafc] p-5">
                 <div className="flex gap-3 mb-4 items-center">
-                  <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-slate-950 text-white font-black text-xl">{person?.name?.[0]?.toUpperCase() || '?'}</div>
+                  <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-slate-950 text-white font-bold text-xl">{person?.name?.[0]?.toUpperCase() || '?'}</div>
                   <div>
-                    <p className="font-black text-lg">{person?.name || 'Unknown User'}</p>
+                    <p className="font-bold text-lg">{person?.name || 'Unknown User'}</p>
                     <p className="text-sm text-slate-500">{person?.department} · {person?.email}</p>
                   </div>
                   <span className="ml-auto rounded-full bg-[#3654ff]/10 px-3 py-1 text-xs font-bold text-[#3654ff] border border-[#3654ff]/20">
@@ -898,7 +898,7 @@ function AdminDashboard({ admin, certifications, people, query, setQuery, review
                   {certs.map((cert) => (
                     <article key={cert.id} className="grid gap-4 rounded-2xl border border-[#3654ff]/20 bg-white p-4 lg:grid-cols-[1.2fr_1fr_auto] lg:items-center">
                       <div>
-                        <p className="font-black">{cert.title}</p>
+                        <p className="font-bold">{cert.title}</p>
                         <p className="text-sm text-slate-500">{cert.issuing_organization} · issued {cert.issue_date}</p>
                         {cert.tags && cert.tags.length > 0 && (
                           <div className="mt-1 flex flex-wrap gap-1">
@@ -914,11 +914,11 @@ function AdminDashboard({ admin, certifications, people, query, setQuery, review
                       <div className="flex flex-wrap items-center gap-2 lg:justify-end">
                         <StatusPill reviewed={Boolean(cert.admin_review)} delayed={cert.probable_completion_time ? new Date().toISOString().slice(0, 10) > cert.probable_completion_time : false} />
                         {cert.fileName && (
-                          <button onClick={() => onView(cert)} className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-2 text-sm font-black text-slate-700 border border-slate-200" title="View document">
+                          <button onClick={() => onView(cert)} className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-2 text-sm font-bold text-slate-700 border border-slate-200" title="View document">
                             <Eye className="h-4 w-4" /> View
                           </button>
                         )}
-                        <button onClick={() => onReview(cert)} className="rounded-full bg-slate-950 px-4 py-2 text-sm font-black text-white" title={cert.admin_review ? 'Edit review' : 'Review certificate'}>
+                        <button onClick={() => onReview(cert)} className="rounded-full bg-slate-950 px-4 py-2 text-sm font-bold text-white" title={cert.admin_review ? 'Edit review' : 'Review certificate'}>
                           {admin.role === 'admin' ? (cert.admin_review ? 'Edit Review' : 'Review') : 'Add Notes'}
                         </button>
                       </div>
@@ -941,8 +941,8 @@ function DashboardHeader({ icon, eyebrow, title, subtitle, action }: { icon: Rea
         <div className="flex items-center gap-4">
           <div className="grid h-16 w-16 place-items-center rounded-3xl bg-[#f7c948] text-slate-950">{icon}</div>
           <div>
-            <p className="text-sm font-black uppercase tracking-wide text-[#3654ff]">{eyebrow}</p>
-            <h1 className="text-3xl font-black lg:text-4xl">{title}</h1>
+            <p className="text-sm font-bold uppercase tracking-wide text-[#3654ff]">{eyebrow}</p>
+            <h1 className="text-xl font-bold lg:text-2xl">{title}</h1>
             <p className="mt-1 font-medium text-slate-500">{subtitle}</p>
           </div>
         </div>
@@ -957,7 +957,7 @@ function StatCard({ icon, label, value }: { icon: ReactNode; label: string; valu
     <div className="bg-white rounded-[1.5rem] border border-[#3654ff]/40 p-5 shadow-sm hover:shadow-md transition-shadow">
       <div className="mb-4 grid h-11 w-11 place-items-center rounded-2xl bg-[#3654ff]/10 text-[#3654ff]">{icon}</div>
       <p className="text-xs font-bold uppercase tracking-wide text-slate-500">{label}</p>
-      <p className="text-3xl font-black text-slate-900">{value}</p>
+      <p className="text-2xl font-bold text-slate-900">{value}</p>
     </div>
   )
 }
@@ -989,7 +989,7 @@ function CertificationGrid({ certifications, onView, onUpload, onRemove, onEdit,
           <div className="flex gap-3 mb-4 items-center">
             <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-slate-950 text-white"><FolderOpen className="h-5 w-5" /></div>
             <div>
-              <p className="font-black text-lg">{org}</p>
+              <p className="font-bold text-lg">{org}</p>
               <p className="text-sm text-slate-500">{certs.length} {certs.length === 1 ? 'Certificate' : 'Certificates'}</p>
             </div>
           </div>
@@ -1002,16 +1002,16 @@ function CertificationGrid({ certifications, onView, onUpload, onRemove, onEdit,
                   <article key={cert.id} className="grid gap-4 rounded-2xl border-2 border-slate-100 bg-white p-4 lg:grid-cols-[1.5fr_1fr_1.5fr_auto] lg:items-center">
                     <div>
                       <p className="text-xs font-bold uppercase tracking-wide text-[#3654ff]">{cert.issuing_organization}</p>
-                      <p className="font-black text-lg text-slate-900">{cert.title}</p>
+                      <p className="font-bold text-lg text-slate-900">{cert.title}</p>
                     </div>
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2">
                         <p className="text-xs font-bold text-slate-400">Issued:</p>
-                        <p className="text-sm font-black text-slate-700">{formatDate(cert.issue_date)}</p>
+                        <p className="text-sm font-bold text-slate-700">{formatDate(cert.issue_date)}</p>
                       </div>
                       <div className="flex items-center gap-2">
                         <p className="text-xs font-bold text-slate-400">Submitted:</p>
-                        <p className="text-sm font-black text-slate-700">{formatDate(cert.created_at ? cert.created_at.slice(0, 10) : '')}</p>
+                        <p className="text-sm font-bold text-slate-700">{formatDate(cert.created_at ? cert.created_at.slice(0, 10) : '')}</p>
                       </div>
                     </div>
                     <div className="rounded-xl bg-[#f0fdf4] p-3 border border-[#bbf7d0]">
@@ -1021,7 +1021,7 @@ function CertificationGrid({ certifications, onView, onUpload, onRemove, onEdit,
                     </div>
                     <div className="flex items-center gap-2">
                       {cert.fileName && (
-                        <button onClick={() => onView(cert)} className="inline-flex items-center gap-2 rounded-xl bg-[#3654ff] px-4 py-2 text-sm font-black text-white hover:bg-[#2541d8] transition" title="View document">
+                        <button onClick={() => onView(cert)} className="inline-flex items-center gap-2 rounded-xl bg-[#3654ff] px-4 py-2 text-sm font-bold text-white hover:bg-[#2541d8] transition" title="View document">
                           <Eye className="h-4 w-4" /> View
                         </button>
                       )}
@@ -1042,7 +1042,7 @@ function CertificationGrid({ certifications, onView, onUpload, onRemove, onEdit,
                         </div>
                         <div>
                           <p className="text-xs font-bold uppercase tracking-wide text-[#3654ff]">{cert.issuing_organization}</p>
-                          <h3 className="mt-1 text-xl font-black text-slate-900">{cert.title}</h3>
+                          <h3 className="mt-1 text-xl font-bold text-slate-900">{cert.title}</h3>
                           {/* Tags */}
                           {cert.tags && cert.tags.length > 0 && (
                             <div className="mt-2 flex flex-wrap gap-2">
@@ -1072,7 +1072,7 @@ function CertificationGrid({ certifications, onView, onUpload, onRemove, onEdit,
                         </div>
                         <div>
                           <p className="text-xs font-bold text-slate-400">Issued</p>
-                          <p className="text-sm font-black text-slate-700">{formatDate(cert.issue_date)}</p>
+                          <p className="text-sm font-bold text-slate-700">{formatDate(cert.issue_date)}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3 border-l border-slate-100 pl-4">
@@ -1081,7 +1081,7 @@ function CertificationGrid({ certifications, onView, onUpload, onRemove, onEdit,
                         </div>
                         <div>
                           <p className="text-xs font-bold text-slate-400">Submitted</p>
-                          <p className="text-sm font-black text-slate-700">{formatDate(cert.created_at ? cert.created_at.slice(0, 10) : '')}</p>
+                          <p className="text-sm font-bold text-slate-700">{formatDate(cert.created_at ? cert.created_at.slice(0, 10) : '')}</p>
                         </div>
                       </div>
                     </div>
@@ -1092,15 +1092,15 @@ function CertificationGrid({ certifications, onView, onUpload, onRemove, onEdit,
                     <div className="flex flex-wrap gap-2 mb-4">
                       {cert.fileName ? (
                         <>
-                          <button onClick={() => onView(cert)} className="inline-flex items-center gap-2 rounded-xl bg-[#3654ff] px-4 py-2 text-sm font-black text-white hover:bg-[#2541d8] transition" title="View document">
+                          <button onClick={() => onView(cert)} className="inline-flex items-center gap-2 rounded-xl bg-[#3654ff] px-4 py-2 text-sm font-bold text-white hover:bg-[#2541d8] transition" title="View document">
                             <Eye className="h-4 w-4" /> View Document
                           </button>
-                          <button onClick={() => onRemove(cert.id)} className="inline-flex items-center gap-2 rounded-xl bg-[#fee2e2] px-4 py-2 text-sm font-black text-[#ef4444] hover:bg-[#fecaca] transition" title="Remove document">
+                          <button onClick={() => onRemove(cert.id)} className="inline-flex items-center gap-2 rounded-xl bg-[#fee2e2] px-4 py-2 text-sm font-bold text-[#ef4444] hover:bg-[#fecaca] transition" title="Remove document">
                             <Trash2 className="h-4 w-4" /> Remove Document
                           </button>
                         </>
                       ) : (
-                        <label className="inline-flex items-center gap-2 rounded-xl bg-[#bfdbfe] px-4 py-2 text-sm font-black text-slate-700 hover:bg-[#a5c4f7] cursor-pointer transition" title="Upload document">
+                        <label className="inline-flex items-center gap-2 rounded-xl bg-[#bfdbfe] px-4 py-2 text-sm font-bold text-slate-700 hover:bg-[#a5c4f7] cursor-pointer transition" title="Upload document">
                           <UploadCloud className="h-4 w-4" /> Upload Document
                           <input type="file" accept=".pdf" className="hidden" onChange={(event) => {
                             const file = event.target.files?.[0];
@@ -1118,10 +1118,10 @@ function CertificationGrid({ certifications, onView, onUpload, onRemove, onEdit,
                           }} />
                         </label>
                       )}
-                      <button onClick={() => onEdit(cert)} className="inline-flex items-center gap-2 rounded-xl bg-[#fef3c7] px-4 py-2 text-sm font-black text-[#b45309] hover:bg-[#fde68a] transition" title="Edit certificate">
+                      <button onClick={() => onEdit(cert)} className="inline-flex items-center gap-2 rounded-xl bg-[#fef3c7] px-4 py-2 text-sm font-bold text-[#b45309] hover:bg-[#fde68a] transition" title="Edit certificate">
                         <Pencil className="h-4 w-4" /> Edit
                       </button>
-                      <button onClick={() => onDelete(cert.id)} className="inline-flex items-center gap-2 rounded-xl bg-[#fee2e2] px-4 py-2 text-sm font-black text-[#ef4444] hover:bg-[#fecaca] transition" title="Delete certificate">
+                      <button onClick={() => onDelete(cert.id)} className="inline-flex items-center gap-2 rounded-xl bg-[#fee2e2] px-4 py-2 text-sm font-bold text-[#ef4444] hover:bg-[#fecaca] transition" title="Delete certificate">
                         <Trash2 className="h-4 w-4" /> Delete
                       </button>
                     </div>
@@ -1133,7 +1133,7 @@ function CertificationGrid({ certifications, onView, onUpload, onRemove, onEdit,
                           <Bell className="h-4 w-4" />
                         </div>
                         <div>
-                          <p className="text-sm font-black text-[#b45309]">Awaiting admin feedback</p>
+                          <p className="text-sm font-bold text-[#b45309]">Awaiting admin feedback</p>
                         </div>
                       </div>
                     </div>
@@ -1337,7 +1337,7 @@ function AddCertificationDialog({ form, setForm, error, onClose, onSubmit, isEdi
     <Modal onClose={onClose} title={isEdit ? "Edit certification" : "Add certification"} icon={<UploadCloud />}>
       <div className="space-y-4">
         {/* Dropdown for Issuing Organization */}
-        <label className="block text-sm font-black uppercase tracking-wide text-slate-500">
+        <label className="block text-sm font-bold uppercase tracking-wide text-slate-500">
           Issuing organization
           <div className="relative mt-2">
             <select
@@ -1401,7 +1401,7 @@ function AddCertificationDialog({ form, setForm, error, onClose, onSubmit, isEdi
         )}
 
         {/* Dropdown for Certification Title */}
-        <label className="block text-sm font-black uppercase tracking-wide text-slate-500">
+        <label className="block text-sm font-bold uppercase tracking-wide text-slate-500">
           Certification title
           <div className="relative mt-2">
             <select
@@ -1450,7 +1450,7 @@ function AddCertificationDialog({ form, setForm, error, onClose, onSubmit, isEdi
         <TextInput label="Probable Completion Time" type="date" value={form.probable_completion_time || ''} onChange={(value) => setForm({ ...form, probable_completion_time: value })} min={form.issue_date} />
         <label className="block cursor-pointer rounded-3xl border-2 border-dashed border-slate-950 bg-[#bfdbfe] p-6 text-center transition hover:bg-[#dbeafe]">
           <UploadCloud className="mx-auto mb-2 h-9 w-9" />
-          <span className="block font-black">{form.fileName || 'Choose PDF (Optional)'}</span>
+          <span className="block font-bold">{form.fileName || 'Choose PDF (Optional)'}</span>
           <span className="mt-1 block text-sm font-semibold text-slate-600">Accepted PDF document formats only</span>
           <input type="file" accept=".pdf" className="hidden" onChange={(event) => {
             const file = event.target.files?.[0];
@@ -1467,7 +1467,7 @@ function AddCertificationDialog({ form, setForm, error, onClose, onSubmit, isEdi
             }
           }} />
         </label>
-        {error && <p className="rounded-2xl bg-red-100 px-4 py-3 text-sm font-black text-red-700">{error}</p>}
+        {error && <p className="rounded-2xl bg-red-100 px-4 py-3 text-sm font-bold text-red-700">{error}</p>}
         <button onClick={onSubmit} className="w-full rounded-xl bg-[#3654ff] px-6 py-4 font-bold text-white shadow-sm hover:bg-[#2541d8] transition">{isEdit ? 'Save changes' : 'Submit certificate'}</button>
       </div>
     </Modal>
@@ -1481,19 +1481,19 @@ function ReviewDialog({ cert, reviewText, setReviewText, onClose, onSave, people
     <Modal onClose={onClose} title={isAdmin ? "Review submission" : "Add Notes"} icon={<ClipboardCheck />}>
       <div className="space-y-4">
         <div className="rounded-3xl bg-[#f8fafc] p-4">
-          <p className="font-black">{cert.title}</p>
+          <p className="font-bold">{cert.title}</p>
           <p className="text-sm font-medium text-slate-500">{person?.name} · {cert.issuing_organization}</p>
-          <button onClick={() => onView(cert)} className="mt-3 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-slate-950" title="View document"><Eye className="h-4 w-4" /> View document</button>
+          <button onClick={() => onView(cert)} className="mt-3 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-slate-950" title="View document"><Eye className="h-4 w-4" /> View document</button>
         </div>
         {isAdmin ? (
           <>
             {cert.notes && (
               <div className="rounded-2xl bg-[#fef3c7] p-4">
-                <p className="text-xs font-black uppercase text-slate-500">Employee Notes</p>
+                <p className="text-xs font-bold uppercase text-slate-500">Employee Notes</p>
                 <p className="text-sm font-semibold mt-1">{cert.notes}</p>
               </div>
             )}
-            <label className="block text-sm font-black uppercase tracking-wide text-slate-500">Reaction</label>
+            <label className="block text-sm font-bold uppercase tracking-wide text-slate-500">Reaction</label>
             <div className="flex gap-2 my-2">
               {['👍', '🎉', '👏', '🔥', '💯'].map((e) => (
                 <button
@@ -1507,24 +1507,24 @@ function ReviewDialog({ cert, reviewText, setReviewText, onClose, onSave, people
                 </button>
               ))}
             </div>
-            <label className="block text-sm font-black uppercase tracking-wide text-slate-500">Feedback (Admin)</label>
+            <label className="block text-sm font-bold uppercase tracking-wide text-slate-500">Feedback (Admin)</label>
             <textarea value={reviewText} onChange={(event) => setReviewText(event.target.value)} rows={5} className="w-full rounded-2xl border-2 border-slate-200 bg-white p-4 font-semibold outline-none focus:border-[#3654ff]" placeholder="Write approval notes or requested corrections..." />
           </>
         ) : (
           <>
             {cert.admin_review && (
               <div className="rounded-2xl bg-[#d9f99d] p-4">
-                <p className="text-xs font-black uppercase text-slate-500">Admin Feedback</p>
+                <p className="text-xs font-bold uppercase text-slate-500">Admin Feedback</p>
                 <p className="text-sm font-semibold mt-1">{cert.admin_review}</p>
               </div>
             )}
             {cert.emoji && (
               <div className="rounded-2xl bg-[#bfdbfe] p-4 mb-2 flex items-center gap-2">
-                <p className="text-xs font-black uppercase text-slate-500">Admin Reaction:</p>
+                <p className="text-xs font-bold uppercase text-slate-500">Admin Reaction:</p>
                 <span className="text-2xl">{cert.emoji}</span>
               </div>
             )}
-            <label className="block text-sm font-black uppercase tracking-wide text-slate-500">My Notes</label>
+            <label className="block text-sm font-bold uppercase tracking-wide text-slate-500">My Notes</label>
             <textarea value={reviewText} onChange={(event) => setReviewText(event.target.value)} rows={5} className="w-full rounded-2xl border-2 border-slate-200 bg-white p-4 font-semibold outline-none focus:border-[#3654ff]" placeholder="Add notes to this certification..." />
           </>
         )}
@@ -1542,7 +1542,7 @@ function TextInput({ label, value, onChange, placeholder, type = 'text', min }: 
   const inputType = isPassword ? (showPassword ? 'text' : 'password') : type
 
   return (
-    <label className="block text-sm font-black uppercase tracking-wide text-slate-500">
+    <label className="block text-sm font-bold uppercase tracking-wide text-slate-500">
       {label}
       <div className="relative mt-2">
         <input
@@ -1574,7 +1574,7 @@ function Modal({ title, icon, children, onClose }: { title: string; icon: ReactN
         <div className="mb-6 flex items-center justify-between gap-4 flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#f7c948]">{icon}</div>
-            <h2 className="text-2xl font-black">{title}</h2>
+            <h2 className="text-2xl font-bold">{title}</h2>
           </div>
           <button onClick={onClose} className="rounded-full bg-white p-2 text-slate-700 hover:bg-slate-950 hover:text-white"><X /></button>
         </div>
@@ -1591,7 +1591,7 @@ function DocumentViewer({ cert, onClose }: { cert: Certification; onClose: () =>
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/70 p-4 backdrop-blur-sm">
       <div className="relative w-full max-w-4xl h-[80vh] rounded-[2rem] border border-slate-200 bg-white p-6 shadow-lg flex flex-col">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-2xl font-black">{cert.title}</h2>
+          <h2 className="text-2xl font-bold">{cert.title}</h2>
           <button onClick={onClose} className="rounded-full bg-white p-2 text-slate-700 hover:bg-slate-950 hover:text-white"><X /></button>
         </div>
         <div className="flex-1 bg-white rounded-2xl overflow-hidden border-2 border-slate-200">
