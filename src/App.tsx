@@ -249,6 +249,17 @@ function App() {
       return
     }
 
+    const isDuplicate = myCertifications.some(
+      (cert) =>
+        cert.title.toLowerCase() === form.title.toLowerCase() &&
+        cert.issuing_organization.toLowerCase() === form.issuing_organization.toLowerCase() &&
+        cert.id !== editingCert?.id
+    )
+    if (isDuplicate) {
+      setFormError('You have already added this course from this organization.')
+      return
+    }
+
     const certData = {
       user_id: activeUser?.id ?? '',
       title: form.title,
@@ -887,158 +898,177 @@ function CertificationGrid({ certifications, onView, onUpload, onRemove, onEdit,
     }
   }
 
-  return (
-    <div className="mt-8 grid gap-4">
-      {[...certifications]
-        .sort((a, b) => a.issuing_organization.localeCompare(b.issuing_organization))
-        .map((cert) => {
-          const isReviewed = Boolean(cert.admin_review);
-          
-          if (isReviewed) {
-            return (
-              <article key={cert.id} className="grid gap-4 rounded-2xl border-2 border-slate-100 bg-white p-4 lg:grid-cols-[1.5fr_1fr_1.5fr_auto] lg:items-center">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wide text-[#3654ff]">{cert.issuing_organization}</p>
-                  <p className="font-black text-lg text-slate-900">{cert.title}</p>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-2">
-                    <p className="text-xs font-bold text-slate-400">Issued:</p>
-                    <p className="text-sm font-black text-slate-700">{formatDate(cert.issue_date)}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <p className="text-xs font-bold text-slate-400">Submitted:</p>
-                    <p className="text-sm font-black text-slate-700">{formatDate(cert.created_at ? cert.created_at.slice(0, 10) : '')}</p>
-                  </div>
-                </div>
-                <div className="rounded-xl bg-[#f0fdf4] p-3 border border-[#bbf7d0]">
-                  <p className="text-sm font-bold text-[#16a34a] flex items-center gap-2">
-                    {cert.admin_review} {cert.emoji ? <span className="text-xl">{cert.emoji}</span> : <span className="text-xl">🎉</span>}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  {cert.fileName && (
-                    <button onClick={() => onView(cert)} className="inline-flex items-center gap-2 rounded-xl bg-[#3654ff] px-4 py-2 text-sm font-black text-white hover:bg-[#2541d8] transition" title="View document">
-                      <Eye className="h-4 w-4" /> View
-                    </button>
-                  )}
-                  {/* Cannot edit after review */}
-                </div>
-              </article>
-            );
-          }
+  const groupedByOrg = useMemo(() => {
+    const groups: Record<string, Certification[]> = {}
+    certifications.forEach(cert => {
+      if (!groups[cert.issuing_organization]) groups[cert.issuing_organization] = []
+      groups[cert.issuing_organization].push(cert)
+    })
+    return groups
+  }, [certifications])
 
-          return (
-            <article key={cert.id} className="rounded-[2rem] bg-white p-6 shadow-sm border border-slate-100 flex flex-col justify-between">
-              <div>
-                {/* Header */}
-                <div className="flex items-start justify-between mb-6">
-                  <div className="flex items-center gap-4">
-                    {/* Icon Box */}
-                    <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#eef2ff] text-[#4f46e5]">
-                      <FileText className="h-6 w-6" />
-                    </div>
+  return (
+    <div className="mt-8 grid gap-6">
+      {Object.entries(groupedByOrg).map(([org, certs]) => (
+        <div key={org} className="rounded-3xl border-2 border-slate-200 bg-[#f8fafc] p-5">
+          <div className="flex gap-3 mb-4 items-center">
+            <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-slate-950 text-white"><FolderOpen className="h-5 w-5" /></div>
+            <div>
+              <p className="font-black text-lg">{org}</p>
+              <p className="text-sm text-slate-500">{certs.length} {certs.length === 1 ? 'Certificate' : 'Certificates'}</p>
+            </div>
+          </div>
+          <div className="grid gap-3">
+            {certs.map((cert) => {
+              const isReviewed = Boolean(cert.admin_review);
+              
+              if (isReviewed) {
+                return (
+                  <article key={cert.id} className="grid gap-4 rounded-2xl border-2 border-slate-100 bg-white p-4 lg:grid-cols-[1.5fr_1fr_1.5fr_auto] lg:items-center">
                     <div>
                       <p className="text-xs font-bold uppercase tracking-wide text-[#3654ff]">{cert.issuing_organization}</p>
-                      <h3 className="mt-1 text-xl font-black text-slate-900">{cert.title}</h3>
-                      {/* Tags */}
-                      {cert.tags && cert.tags.length > 0 && (
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {cert.tags.map((tag) => (
-                            <span key={tag} className="inline-flex items-center rounded-full bg-[#ecfdf5] px-2.5 py-1 text-xs font-bold text-[#047857]">
-                              <span className="h-2 w-2 rounded-full bg-[#10b981] mr-1.5"></span>
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
+                      <p className="font-black text-lg text-slate-900">{cert.title}</p>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs font-bold text-slate-400">Issued:</p>
+                        <p className="text-sm font-black text-slate-700">{formatDate(cert.issue_date)}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs font-bold text-slate-400">Submitted:</p>
+                        <p className="text-sm font-black text-slate-700">{formatDate(cert.created_at ? cert.created_at.slice(0, 10) : '')}</p>
+                      </div>
+                    </div>
+                    <div className="rounded-xl bg-[#f0fdf4] p-3 border border-[#bbf7d0]">
+                      <p className="text-sm font-bold text-[#16a34a] flex items-center gap-2">
+                        {cert.admin_review} {cert.emoji ? <span className="text-xl">{cert.emoji}</span> : <span className="text-xl">🎉</span>}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {cert.fileName && (
+                        <button onClick={() => onView(cert)} className="inline-flex items-center gap-2 rounded-xl bg-[#3654ff] px-4 py-2 text-sm font-black text-white hover:bg-[#2541d8] transition" title="View document">
+                          <Eye className="h-4 w-4" /> View
+                        </button>
                       )}
                     </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    {cert.emoji && <span className="text-2xl" title="Admin reaction">{cert.emoji}</span>}
-                    <span className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold bg-[#fffbeb] text-[#b45309]">
-                      Pending
-                    </span>
-                  </div>
-                </div>
+                  </article>
+                );
+              }
 
-                {/* Dates Section */}
-                <div className="grid grid-cols-2 gap-4 rounded-2xl bg-[#f8fafc] p-4 mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="grid h-9 w-9 place-items-center rounded-xl bg-white shadow-sm text-[#4f46e5]">
-                      <CalendarDays className="h-4 w-4" />
+              return (
+                <article key={cert.id} className="rounded-[2rem] bg-white p-6 shadow-sm border border-slate-100 flex flex-col justify-between">
+                  <div>
+                    {/* Header */}
+                    <div className="flex items-start justify-between mb-6">
+                      <div className="flex items-center gap-4">
+                        {/* Icon Box */}
+                        <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#eef2ff] text-[#4f46e5]">
+                          <FileText className="h-6 w-6" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold uppercase tracking-wide text-[#3654ff]">{cert.issuing_organization}</p>
+                          <h3 className="mt-1 text-xl font-black text-slate-900">{cert.title}</h3>
+                          {/* Tags */}
+                          {cert.tags && cert.tags.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {cert.tags.map((tag) => (
+                                <span key={tag} className="inline-flex items-center rounded-full bg-[#ecfdf5] px-2.5 py-1 text-xs font-bold text-[#047857]">
+                                  <span className="h-2 w-2 rounded-full bg-[#10b981] mr-1.5"></span>
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {cert.emoji && <span className="text-2xl" title="Admin reaction">{cert.emoji}</span>}
+                        <span className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold bg-[#fffbeb] text-[#b45309]">
+                          Pending
+                        </span>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-xs font-bold text-slate-400">Issued</p>
-                      <p className="text-sm font-black text-slate-700">{formatDate(cert.issue_date)}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 border-l border-slate-100 pl-4">
-                    <div className="grid h-9 w-9 place-items-center rounded-xl bg-white shadow-sm text-[#4f46e5]">
-                      <CalendarDays className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-slate-400">Submitted</p>
-                      <p className="text-sm font-black text-slate-700">{formatDate(cert.created_at ? cert.created_at.slice(0, 10) : '')}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
 
-              <div>
-                {/* Actions */}
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {cert.fileName ? (
-                    <>
-                      <button onClick={() => onView(cert)} className="inline-flex items-center gap-2 rounded-xl bg-[#3654ff] px-4 py-2 text-sm font-black text-white hover:bg-[#2541d8] transition" title="View document">
-                        <Eye className="h-4 w-4" /> View Document
+                    {/* Dates Section */}
+                    <div className="grid grid-cols-2 gap-4 rounded-2xl bg-[#f8fafc] p-4 mb-6">
+                      <div className="flex items-center gap-3">
+                        <div className="grid h-9 w-9 place-items-center rounded-xl bg-white shadow-sm text-[#4f46e5]">
+                          <CalendarDays className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-slate-400">Issued</p>
+                          <p className="text-sm font-black text-slate-700">{formatDate(cert.issue_date)}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 border-l border-slate-100 pl-4">
+                        <div className="grid h-9 w-9 place-items-center rounded-xl bg-white shadow-sm text-[#4f46e5]">
+                          <CalendarDays className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-slate-400">Submitted</p>
+                          <p className="text-sm font-black text-slate-700">{formatDate(cert.created_at ? cert.created_at.slice(0, 10) : '')}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    {/* Actions */}
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {cert.fileName ? (
+                        <>
+                          <button onClick={() => onView(cert)} className="inline-flex items-center gap-2 rounded-xl bg-[#3654ff] px-4 py-2 text-sm font-black text-white hover:bg-[#2541d8] transition" title="View document">
+                            <Eye className="h-4 w-4" /> View Document
+                          </button>
+                          <button onClick={() => onRemove(cert.id)} className="inline-flex items-center gap-2 rounded-xl bg-[#fee2e2] px-4 py-2 text-sm font-black text-[#ef4444] hover:bg-[#fecaca] transition" title="Remove document">
+                            <Trash2 className="h-4 w-4" /> Remove Document
+                          </button>
+                        </>
+                      ) : (
+                        <label className="inline-flex items-center gap-2 rounded-xl bg-[#bfdbfe] px-4 py-2 text-sm font-black text-slate-700 hover:bg-[#a5c4f7] cursor-pointer transition" title="Upload document">
+                          <UploadCloud className="h-4 w-4" /> Upload Document
+                          <input type="file" accept=".pdf" className="hidden" onChange={(event) => {
+                            const file = event.target.files?.[0];
+                            if (file) {
+                              if (file.size > 5 * 1024 * 1024) {
+                                alert('File size exceeds 5MB limit');
+                                return;
+                              }
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                onUpload(cert.id, file.name, reader.result as string);
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }} />
+                        </label>
+                      )}
+                      <button onClick={() => onEdit(cert)} className="inline-flex items-center gap-2 rounded-xl bg-[#fef3c7] px-4 py-2 text-sm font-black text-[#b45309] hover:bg-[#fde68a] transition" title="Edit certificate">
+                        <Pencil className="h-4 w-4" /> Edit
                       </button>
-                      <button onClick={() => onRemove(cert.id)} className="inline-flex items-center gap-2 rounded-xl bg-[#fee2e2] px-4 py-2 text-sm font-black text-[#ef4444] hover:bg-[#fecaca] transition" title="Remove document">
-                        <Trash2 className="h-4 w-4" /> Remove Document
+                      <button onClick={() => onDelete(cert.id)} className="inline-flex items-center gap-2 rounded-xl bg-[#fee2e2] px-4 py-2 text-sm font-black text-[#ef4444] hover:bg-[#fecaca] transition" title="Delete certificate">
+                        <Trash2 className="h-4 w-4" /> Delete
                       </button>
-                    </>
-                  ) : (
-                    <label className="inline-flex items-center gap-2 rounded-xl bg-[#bfdbfe] px-4 py-2 text-sm font-black text-slate-700 hover:bg-[#a5c4f7] cursor-pointer transition" title="Upload document">
-                      <UploadCloud className="h-4 w-4" /> Upload Document
-                      <input type="file" accept=".pdf" className="hidden" onChange={(event) => {
-                        const file = event.target.files?.[0];
-                        if (file) {
-                          if (file.size > 5 * 1024 * 1024) {
-                            alert('File size exceeds 5MB limit');
-                            return;
-                          }
-                          const reader = new FileReader();
-                          reader.onloadend = () => {
-                            onUpload(cert.id, file.name, reader.result as string);
-                          };
-                          reader.readAsDataURL(file);
-                        }
-                      }} />
-                    </label>
-                  )}
-                  <button onClick={() => onEdit(cert)} className="inline-flex items-center gap-2 rounded-xl bg-[#fef3c7] px-4 py-2 text-sm font-black text-[#b45309] hover:bg-[#fde68a] transition" title="Edit certificate">
-                    <Pencil className="h-4 w-4" /> Edit
-                  </button>
-                  <button onClick={() => onDelete(cert.id)} className="inline-flex items-center gap-2 rounded-xl bg-[#fee2e2] px-4 py-2 text-sm font-black text-[#ef4444] hover:bg-[#fecaca] transition" title="Delete certificate">
-                    <Trash2 className="h-4 w-4" /> Delete
-                  </button>
-                </div>
-
-                {/* Admin Review Banner */}
-                <div className="flex items-center justify-between rounded-xl bg-[#fffbeb] p-4 border border-[#fef08a]">
-                  <div className="flex items-center gap-3">
-                    <div className="grid h-8 w-8 place-items-center rounded-full bg-[#f59e0b] text-white">
-                      <Bell className="h-4 w-4" />
                     </div>
-                    <div>
-                      <p className="text-sm font-black text-[#b45309]">Awaiting admin feedback</p>
+
+                    {/* Admin Review Banner */}
+                    <div className="flex items-center justify-between rounded-xl bg-[#fffbeb] p-4 border border-[#fef08a]">
+                      <div className="flex items-center gap-3">
+                        <div className="grid h-8 w-8 place-items-center rounded-full bg-[#f59e0b] text-white">
+                          <Bell className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-black text-[#b45309]">Awaiting admin feedback</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            </article>
-          );
-        })}
+                </article>
+              );
+            })}
+          </div>
+        </div>
+      ))}
     </div>
   )
 }
