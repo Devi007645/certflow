@@ -351,9 +351,9 @@ function App() {
   return (
     <main className="h-screen bg-[#f7f3ea] text-slate-950 overflow-y-auto">
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute -left-32 top-16 h-72 w-72 rounded-full bg-[#f7c948]/30 blur-3xl" />
-        <div className="absolute right-0 top-0 h-[28rem] w-[28rem] rounded-full bg-[#3654ff]/15 blur-3xl" />
-        <div className="absolute bottom-0 left-1/2 h-80 w-80 rounded-full bg-[#ef6f6c]/20 blur-3xl" />
+        <div className="absolute -left-32 top-16 h-80 w-80 rounded-full bg-[#f7c948]/40 blur-3xl" />
+        <div className="absolute right-0 top-0 h-[32rem] w-[32rem] rounded-full bg-[#3654ff]/25 blur-3xl" />
+        <div className="absolute bottom-0 left-1/2 h-96 w-96 rounded-full bg-[#ef6f6c]/30 blur-3xl" />
       </div>
 
       <header className="sticky top-0 z-40 border-b border-slate-900/10 bg-[#f7f3ea]/85 backdrop-blur-xl">
@@ -781,7 +781,7 @@ function UserDashboard({ user, certifications, allCertifications, people, onAdd,
         <CertificationGrid certifications={certifications} onView={onView} onUpload={onUpload} onRemove={onRemove} onEdit={onEdit} onDelete={onDelete} />
       </div>
 
-      <div className="mt-12 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="mt-12 rounded-[2rem] border border-[#3654ff]/20 bg-white p-6 shadow-sm">
         <div className="mb-5">
           <h2 className="text-2xl font-black">Team Progress</h2>
           <p className="text-sm font-medium text-slate-500">View what other employees are working on.</p>
@@ -811,7 +811,7 @@ function UserDashboard({ user, certifications, allCertifications, people, onAdd,
                 </div>
                 <div className="grid gap-3">
                   {certs.map((cert) => (
-                    <article key={cert.id} className="grid gap-4 rounded-2xl border-2 border-slate-100 bg-white p-4 lg:grid-cols-[1.2fr_1fr_auto] lg:items-center">
+                    <article key={cert.id} className="grid gap-4 rounded-2xl border border-[#3654ff]/10 bg-white p-4 lg:grid-cols-[1.2fr_1fr_auto] lg:items-center">
                       <div>
                         <p className="font-black">{cert.title}</p>
                         <p className="text-sm text-slate-500">{cert.issuing_organization} · issued {cert.issue_date}</p>
@@ -867,7 +867,7 @@ function AdminDashboard({ admin, certifications, people, query, setQuery, review
         <StatCard icon={<MessageSquareText />} label="Reviews written" value={reviewedCount.toString()} />
         <StatCard icon={<UsersRound />} label="Total Users" value={Object.values(people).filter(p => p.role === 'user').length.toString()} />
       </div>
-      <div className="mt-8 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="mt-8 rounded-[2rem] border border-[#3654ff]/20 bg-white p-6 shadow-sm">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-2xl font-black">Submissions</h2>
@@ -895,7 +895,7 @@ function AdminDashboard({ admin, certifications, people, query, setQuery, review
                 </div>
                 <div className="grid gap-3">
                   {certs.map((cert) => (
-                    <article key={cert.id} className="grid gap-4 rounded-2xl border-2 border-slate-100 bg-white p-4 lg:grid-cols-[1.2fr_1fr_auto] lg:items-center">
+                    <article key={cert.id} className="grid gap-4 rounded-2xl border border-[#3654ff]/10 bg-white p-4 lg:grid-cols-[1.2fr_1fr_auto] lg:items-center">
                       <div>
                         <p className="font-black">{cert.title}</p>
                         <p className="text-sm text-slate-500">{cert.issuing_organization} · issued {cert.issue_date}</p>
@@ -935,7 +935,7 @@ function AdminDashboard({ admin, certifications, people, query, setQuery, review
 
 function DashboardHeader({ icon, eyebrow, title, subtitle, action }: { icon: ReactNode; eyebrow: string; title: string; subtitle: string; action: ReactNode }) {
   return (
-    <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+    <div className="rounded-[2rem] border border-[#3654ff]/20 bg-white p-6 shadow-sm">
       <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-4">
           <div className="grid h-16 w-16 place-items-center rounded-3xl bg-[#f7c948] text-slate-950">{icon}</div>
@@ -953,7 +953,7 @@ function DashboardHeader({ icon, eyebrow, title, subtitle, action }: { icon: Rea
 
 function StatCard({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return (
-    <div className="bg-white rounded-[1.5rem] border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow">
+    <div className="bg-white rounded-[1.5rem] border border-[#3654ff]/20 p-5 shadow-sm hover:shadow-md transition-shadow">
       <div className="mb-4 grid h-11 w-11 place-items-center rounded-2xl bg-[#3654ff]/10 text-[#3654ff]">{icon}</div>
       <p className="text-xs font-bold uppercase tracking-wide text-slate-500">{label}</p>
       <p className="text-3xl font-black text-slate-900">{value}</p>
