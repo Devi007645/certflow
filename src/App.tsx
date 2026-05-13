@@ -155,55 +155,77 @@ function App() {
     }
   }, [])
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const { data: employeesData, error: employeesError } = await supabase
-          .from('employees')
-          .select('*')
-        const { data: adminsData, error: adminsError } = await supabase
-          .from('admins')
-          .select('*')
+  const fetchData = async () => {
+    try {
+      const { data: employeesData, error: employeesError } = await supabase
+        .from('employees')
+        .select('*')
+      const { data: adminsData, error: adminsError } = await supabase
+        .from('admins')
+        .select('*')
 
-        if (employeesError) console.error("Error fetching employees:", employeesError)
-        if (adminsError) console.error("Error fetching admins:", adminsError)
+      if (employeesError) console.error("Error fetching employees:", employeesError)
+      if (adminsError) console.error("Error fetching admins:", adminsError)
 
-        const profilesMap: Record<string, Profile> = {}
+      const profilesMap: Record<string, Profile> = {}
 
-        if (employeesData) {
-          employeesData.forEach((profile: any) => {
-            profilesMap[profile.id] = {
-              id: profile.id,
-              email: profile.email,
-              role: 'user',
-              name: profile.name,
-              department: profile.department || 'General',
-            }
-          })
-        }
-
-        if (adminsData) {
-          adminsData.forEach((profile: any) => {
-            profilesMap[profile.id] = {
-              id: profile.id,
-              email: profile.email,
-              role: 'admin',
-              name: profile.name,
-              department: profile.department || 'General',
-            }
-          })
-        }
-
-        // Ensure default admin is always there
-        profilesMap[adminUser.id] = adminUser
-        setPeopleState(profilesMap)
-
-      } catch (err) {
-        console.error("Failed to fetch data:", err)
+      if (employeesData) {
+        employeesData.forEach((profile: any) => {
+          profilesMap[profile.id] = {
+            id: profile.id,
+            email: profile.email,
+            role: 'user',
+            name: profile.name,
+            department: profile.department || 'General',
+          }
+        })
       }
+
+      if (adminsData) {
+        adminsData.forEach((profile: any) => {
+          profilesMap[profile.id] = {
+            id: profile.id,
+            email: profile.email,
+            role: 'admin',
+            name: profile.name,
+            department: profile.department || 'General',
+          }
+        })
+      }
+
+      // Ensure default admin is always there
+      profilesMap[adminUser.id] = adminUser
+      setPeopleState(profilesMap)
+
+    } catch (err) {
+      console.error("Failed to fetch data:", err)
     }
+  }
+
+  useEffect(() => {
     fetchData()
+
+    const channel = supabase
+      .channel('public:employees')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'employees' },
+        (payload) => {
+          console.log('Realtime employee change received:', payload)
+          fetchData()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [])
+
+  const handleRefresh = async () => {
+    await refetch()
+    await fetchData()
+  }
 
   const myCertifications = activeUser ? certifications.filter((cert) => cert.user_id === activeUser.id) : []
   const reviewedCount = certifications.filter((cert) => cert.admin_review).length
@@ -417,7 +439,7 @@ function App() {
             onView={setViewingCert}
             onUpload={handleUploadDocument}
             onRemove={handleRemoveDocument}
-            onRefresh={refetch}
+            onRefresh={handleRefresh}
             isRefreshing={isFetching}
             onEdit={handleEditCertification}
             onDelete={handleDeleteCertification}
@@ -438,7 +460,7 @@ function App() {
               setEmoji(cert.emoji || '')
             }}
             onView={setViewingCert}
-            onRefresh={refetch}
+            onRefresh={handleRefresh}
             isRefreshing={isFetching}
           />
         )}
