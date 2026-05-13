@@ -451,12 +451,12 @@ function App() {
         {screen === 'admin' && activeUser && activeUser.role === 'admin' && (
           <AdminDashboard
             admin={activeUser}
-            certifications={filteredCertifications.filter(c => c.fileName)}
+            certifications={filteredCertifications}
             people={peopleState}
             query={query}
             setQuery={setQuery}
-            reviewedCount={certifications.filter(c => c.fileName && c.admin_review).length}
-            pendingCount={certifications.filter(c => c.fileName && !c.admin_review).length}
+            reviewedCount={certifications.filter(c => c.admin_review).length}
+            pendingCount={certifications.filter(c => !c.admin_review).length}
             onReview={(cert) => {
               setSelectedCert(cert)
               setReviewText(activeUser.role === 'admin' ? cert.admin_review : (cert.notes || ''))
@@ -1512,15 +1512,17 @@ function TextInput({ label, value, onChange, placeholder, type = 'text', min }: 
 function Modal({ title, icon, children, onClose }: { title: string; icon: ReactNode; children: ReactNode; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/70 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-xl rounded-[2.5rem] border-2 border-slate-950 bg-[#fffaf0] p-6 shadow-[12px_12px_0_#111827]">
-        <div className="mb-6 flex items-center justify-between gap-4">
+      <div className="w-full max-w-xl rounded-[2.5rem] border-2 border-slate-950 bg-[#fffaf0] p-6 shadow-[12px_12px_0_#111827] max-h-[90vh] flex flex-col">
+        <div className="mb-6 flex items-center justify-between gap-4 flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#f7c948]">{icon}</div>
             <h2 className="text-2xl font-black">{title}</h2>
           </div>
           <button onClick={onClose} className="rounded-full bg-white p-2 text-slate-700 hover:bg-slate-950 hover:text-white"><X /></button>
         </div>
-        {children}
+        <div className="overflow-y-auto flex-1 pr-2">
+          {children}
+        </div>
       </div>
     </div>
   )
