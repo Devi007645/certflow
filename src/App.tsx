@@ -99,7 +99,7 @@ function App() {
   const [formError, setFormError] = useState('')
 
   useEffect(() => {
-    const fetchProfiles = async () => {
+    const fetchData = async () => {
       try {
         const { data: employeesData, error: employeesError } = await supabase
           .from('employees')
@@ -107,9 +107,14 @@ function App() {
         const { data: adminsData, error: adminsError } = await supabase
           .from('admins')
           .select('*')
+        const { data: certsData, error: certsError } = await supabase
+          .from('certifications')
+          .select('*')
+          .order('created_at', { ascending: false })
 
         if (employeesError) console.error("Error fetching employees:", employeesError)
         if (adminsError) console.error("Error fetching admins:", adminsError)
+        if (certsError) console.error("Error fetching certifications:", certsError)
 
         const profilesMap: Record<string, Profile> = {}
 
@@ -140,11 +145,15 @@ function App() {
         // Ensure default admin is always there
         profilesMap[adminUser.id] = adminUser
         setPeopleState(profilesMap)
+
+        if (certsData) {
+          setCertifications(certsData)
+        }
       } catch (err) {
-        console.error("Failed to fetch profiles:", err)
+        console.error("Failed to fetch data:", err)
       }
     }
-    fetchProfiles()
+    fetchData()
   }, [])
 
   const myCertifications = activeUser ? certifications.filter((cert) => cert.user_id === activeUser.id) : []
@@ -184,15 +193,14 @@ function App() {
     return null
   }
 
-  const handleAddCertification = () => {
+  const handleAddCertification = async () => {
     const parsed = certSchema.safeParse(form)
     if (!parsed.success) {
       setFormError(parsed.error.issues[0]?.message ?? 'Please check the form')
       return
     }
 
-    const newCertification: Certification = {
-      id: certifications.length > 0 ? Math.max(...certifications.map((cert) => cert.id)) + 1 : 1,
+    const newCertData = {
       user_id: activeUser?.id ?? '',
       title: form.title,
       issuing_organization: form.issuing_organization,
@@ -201,27 +209,52 @@ function App() {
       fileName: form.fileName,
       admin_review: '',
       notes: '',
-      created_at: new Date().toISOString().slice(0, 10),
       probable_completion_time: form.probable_completion_time,
       tags: form.tags,
     }
 
-    setCertifications([newCertification, ...certifications])
+    const { data, error } = await supabase
+      .from('certifications')
+      .insert([newCertData])
+      .select()
+
+    if (error) {
+      setFormError(error.message)
+      return
+    }
+
+    if (data) {
+      setCertifications([data[0], ...certifications])
+    }
     setForm({ title: '', issuing_organization: '', issue_date: '', fileName: '', fileData: '', probable_completion_time: '', tags: [] })
     setFormError('')
     setIsModalOpen(false)
   }
 
-  const handleSaveReview = () => {
+  const handleSaveReview = async () => {
     if (!selectedCert) return
+    
+    const updates: any = {}
+    if (activeUser?.role === 'admin') {
+      updates.admin_review = reviewText.trim()
+    } else {
+      updates.notes = reviewText.trim()
+    }
+
+    const { error } = await supabase
+      .from('certifications')
+      .update(updates)
+      .eq('id', selectedCert.id)
+
+    if (error) {
+      console.error("Error updating review:", error)
+      return
+    }
+
     setCertifications((items) =>
       items.map((cert) => {
         if (cert.id === selectedCert.id) {
-          if (activeUser?.role === 'admin') {
-            return { ...cert, admin_review: reviewText.trim() }
-          } else {
-            return { ...cert, notes: reviewText.trim() }
-          }
+          return { ...cert, ...updates }
         }
         return cert
       })
@@ -230,7 +263,17 @@ function App() {
     setReviewText('')
   }
 
-  const handleUploadDocument = (certId: number, fileName: string, fileData: string) => {
+  const handleUploadDocument = async (certId: number, fileName: string, fileData: string) => {
+    const { error } = await supabase
+      .from('certifications')
+      .update({ fileName, file_url: fileData })
+      .eq('id', certId)
+
+    if (error) {
+      console.error("Error uploading document:", error)
+      return
+    }
+
     setCertifications(items =>
       items.map(cert =>
         cert.id === certId ? { ...cert, fileName, file_url: fileData } : cert
@@ -238,7 +281,17 @@ function App() {
     )
   }
 
-  const handleRemoveDocument = (certId: number) => {
+  const handleRemoveDocument = async (certId: number) => {
+    const { error } = await supabase
+      .from('certifications')
+      .update({ fileName: '', file_url: '' })
+      .eq('id', certId)
+
+    if (error) {
+      console.error("Error removing document:", error)
+      return
+    }
+
     setCertifications(items =>
       items.map(cert =>
         cert.id === certId ? { ...cert, fileName: '', file_url: '' } : cert
@@ -613,6 +666,15 @@ function UserDashboard({ user, certifications, onAdd, onView, onUpload, onRemove
 }
 
 function AdminDashboard({ admin, certifications, people, query, setQuery, reviewedCount, pendingCount, onReview, onView }: { admin: Profile; certifications: Certification[]; people: Record<string, Profile>; query: string; setQuery: (value: string) => void; reviewedCount: number; pendingCount: number; onReview: (cert: Certification) => void; onView: (cert: Certification) => void }) {
+  const groupedCerts = useMemo(() => {
+    const groups: Record<string, Certification[]> = {}
+    certifications.forEach(cert => {
+      if (!groups[cert.user_id]) groups[cert.user_id] = []
+      groups[cert.user_id].push(cert)
+    })
+    return groups
+  }, [certifications])
+
   return (
     <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <DashboardHeader
@@ -625,7 +687,7 @@ function AdminDashboard({ admin, certifications, people, query, setQuery, review
       <div className="mt-8 grid gap-4 md:grid-cols-3">
         <StatCard icon={<FolderOpen />} label="Visible records" value={certifications.length.toString()} tone="bg-[#bfdbfe]" />
         <StatCard icon={<MessageSquareText />} label="Reviews written" value={reviewedCount.toString()} tone="bg-[#d9f99d]" />
-        <StatCard icon={<UsersRound />} label="Total Users" value={Object.keys(people).length.toString()} tone="bg-[#fecdd3]" />
+        <StatCard icon={<UsersRound />} label="Total Users" value={Object.values(people).filter(p => p.role === 'user').length.toString()} tone="bg-[#fecdd3]" />
       </div>
       <div className="mt-8 rounded-[2.5rem] border-2 border-slate-950 bg-white p-5 shadow-[10px_10px_0_#3654ff]">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -638,44 +700,53 @@ function AdminDashboard({ admin, certifications, people, query, setQuery, review
             <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search records..." className="w-full rounded-2xl border-2 border-slate-200 bg-[#f8fafc] py-3 pl-12 pr-4 font-bold outline-none focus:border-[#3654ff]" />
           </div>
         </div>
-        <div className="grid gap-4">
-          {certifications.map((cert) => {
-            const person = people[cert.user_id]
+        <div className="grid gap-6">
+          {Object.entries(groupedCerts).map(([userId, certs]) => {
+            const person = people[userId]
             return (
-              <article key={cert.id} className="grid gap-4 rounded-3xl border-2 border-slate-100 bg-[#f8fafc] p-4 lg:grid-cols-[1.2fr_1fr_auto] lg:items-center">
-                <div className="flex gap-3">
+              <div key={userId} className="rounded-3xl border-2 border-slate-200 bg-[#f8fafc] p-5">
+                <div className="flex gap-3 mb-4 items-center">
                   <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-slate-950 text-white"><UserRound className="h-5 w-5" /></div>
                   <div>
-                    <p className="font-black">{person?.name}</p>
+                    <p className="font-black text-lg">{person?.name || 'Unknown User'}</p>
                     <p className="text-sm text-slate-500">{person?.department} · {person?.email}</p>
                   </div>
+                  <span className="ml-auto rounded-full bg-[#f7c948] px-3 py-1 text-xs font-black border-2 border-slate-950">
+                    {certs.length} {certs.length === 1 ? 'Entry' : 'Entries'}
+                  </span>
                 </div>
-                <div>
-                  <p className="font-black">{cert.title}</p>
-                  <p className="text-sm text-slate-500">{cert.issuing_organization} · issued {cert.issue_date}</p>
-                  {cert.tags && cert.tags.length > 0 && (
-                    <div className="mt-1 flex flex-wrap gap-1">
-                      {cert.tags.map((tag) => (
-                        <span key={tag} className="inline-flex items-center rounded-full bg-green-100 px-2 py-1 text-xs font-bold text-green-800 border border-green-300">
-                          <CheckCircle2 className="h-3 w-3 mr-1" />
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
+                <div className="grid gap-3">
+                  {certs.map((cert) => (
+                    <article key={cert.id} className="grid gap-4 rounded-2xl border-2 border-slate-100 bg-white p-4 lg:grid-cols-[1.2fr_1fr_auto] lg:items-center">
+                      <div>
+                        <p className="font-black">{cert.title}</p>
+                        <p className="text-sm text-slate-500">{cert.issuing_organization} · issued {cert.issue_date}</p>
+                        {cert.tags && cert.tags.length > 0 && (
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {cert.tags.map((tag) => (
+                              <span key={tag} className="inline-flex items-center rounded-full bg-green-100 px-2 py-1 text-xs font-bold text-green-800 border border-green-300">
+                                <CheckCircle2 className="h-3 w-3 mr-1" />
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                        <StatusPill reviewed={Boolean(cert.admin_review)} delayed={cert.probable_completion_time ? new Date().toISOString().slice(0, 10) > cert.probable_completion_time : false} />
+                        {cert.fileName && (
+                          <button onClick={() => onView(cert)} className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-2 text-sm font-black text-slate-700 border border-slate-200">
+                            <Eye className="h-4 w-4" /> View
+                          </button>
+                        )}
+                        <button onClick={() => onReview(cert)} className="rounded-full bg-slate-950 px-4 py-2 text-sm font-black text-white">
+                          {admin.role === 'admin' ? 'Review' : 'Add Notes'}
+                        </button>
+                      </div>
+                    </article>
+                  ))}
                 </div>
-                <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-                  <StatusPill reviewed={Boolean(cert.admin_review)} delayed={cert.probable_completion_time ? new Date().toISOString().slice(0, 10) > cert.probable_completion_time : false} />
-                  {cert.fileName && (
-                    <button onClick={() => onView(cert)} className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-2 text-sm font-black text-slate-700">
-                      <Eye className="h-4 w-4" /> View
-                    </button>
-                  )}
-                  <button onClick={() => onReview(cert)} className="rounded-full bg-slate-950 px-4 py-2 text-sm font-black text-white">
-                    {admin.role === 'admin' ? 'Review' : 'Add Notes'}
-                  </button>
-                </div>
-              </article>
+              </div>
             )
           })}
         </div>
