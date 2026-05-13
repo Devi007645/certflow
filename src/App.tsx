@@ -815,7 +815,7 @@ function UserDashboard({ user, certifications, allCertifications, people, onAdd,
                     <article key={cert.id} className="grid gap-4 rounded-2xl border border-[#3654ff]/20 bg-white p-4 lg:grid-cols-[1.2fr_1fr_auto] lg:items-center">
                       <div>
                         <p className="font-bold">{cert.title}</p>
-                        <p className="text-sm text-slate-500">{cert.issuing_organization} · issued {cert.issue_date}</p>
+                        <p className="text-sm text-slate-500">{cert.issuing_organization} · Start {cert.issue_date}</p>
                       </div>
                       <div className="flex flex-wrap items-center gap-2 lg:justify-end">
                         <StatusPill reviewed={Boolean(cert.admin_review)} delayed={cert.probable_completion_time ? new Date().toISOString().slice(0, 10) > cert.probable_completion_time : false} />
@@ -899,7 +899,7 @@ function AdminDashboard({ admin, certifications, people, query, setQuery, review
                     <article key={cert.id} className="grid gap-4 rounded-2xl border border-[#3654ff]/20 bg-white p-4 lg:grid-cols-[1.2fr_1fr_auto] lg:items-center">
                       <div>
                         <p className="font-bold">{cert.title}</p>
-                        <p className="text-sm text-slate-500">{cert.issuing_organization} · issued {cert.issue_date}</p>
+                        <p className="text-sm text-slate-500">{cert.issuing_organization} · Start {cert.issue_date}</p>
                         {cert.tags && cert.tags.length > 0 && (
                           <div className="mt-1 flex flex-wrap gap-1">
                             {cert.tags.map((tag) => (
@@ -1006,7 +1006,7 @@ function CertificationGrid({ certifications, onView, onUpload, onRemove, onEdit,
                     </div>
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2">
-                        <p className="text-xs font-bold text-slate-400">Issued:</p>
+                        <p className="text-xs font-bold text-slate-400">Start:</p>
                         <p className="text-sm font-bold text-slate-700">{formatDate(cert.issue_date)}</p>
                       </div>
                       <div className="flex items-center gap-2">
@@ -1071,7 +1071,7 @@ function CertificationGrid({ certifications, onView, onUpload, onRemove, onEdit,
                           <CalendarDays className="h-4 w-4" />
                         </div>
                         <div>
-                          <p className="text-xs font-bold text-slate-400">Issued</p>
+                          <p className="text-xs font-bold text-slate-400">Start</p>
                           <p className="text-sm font-bold text-slate-700">{formatDate(cert.issue_date)}</p>
                         </div>
                       </div>
@@ -1153,11 +1153,10 @@ function StatusPill({ reviewed, delayed }: { reviewed: boolean; delayed?: boolea
     return <span className="inline-flex w-fit rounded-full px-3 py-1 text-xs font-bold bg-red-100 text-red-700 border border-red-200">Delayed</span>
   }
   return (
-    <span className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-bold ${
-      reviewed 
-        ? 'bg-green-100 text-green-700 border border-green-200' 
+    <span className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-bold ${reviewed
+        ? 'bg-green-100 text-green-700 border border-green-200'
         : 'bg-yellow-100 text-yellow-700 border border-yellow-200'
-    }`}>
+      }`}>
       {reviewed ? 'Reviewed' : 'Pending'}
     </span>
   )
