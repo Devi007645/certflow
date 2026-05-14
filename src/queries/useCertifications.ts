@@ -6,6 +6,7 @@ export type Certification = {
   user_id: string
   title: string
   issuing_organization: string
+  certification_key?: string
   issue_date: string
   file_url: string
   fileName: string

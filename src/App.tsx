@@ -54,6 +54,7 @@ type Profile = {
   role: Role
   name: string
   department: string
+  certification_keys?: string[]
 }
 
 type Certification = {
@@ -61,6 +62,7 @@ type Certification = {
   user_id: string
   title: string
   issuing_organization: string
+  certification_key?: string
   issue_date: string
   file_url: string
   fileName: string
@@ -224,6 +226,7 @@ function App() {
             role: 'user',
             name: profile.name,
             department: profile.department || 'General',
+            certification_keys: profile.certification_keys || [],
           }
         })
       }
@@ -236,6 +239,7 @@ function App() {
             role: 'admin',
             name: profile.name,
             department: profile.department || 'General',
+            certification_keys: profile.certification_keys || [],
           }
         })
       }
@@ -322,14 +326,18 @@ function App() {
       return
     }
 
+    const certKey = `${form.issuing_organization.trim().toLowerCase()}:${form.title.trim().toLowerCase()}`;
+
     const isDuplicate = myCertifications.some(
       (cert) =>
-        cert.title.toLowerCase() === form.title.toLowerCase() &&
-        cert.issuing_organization.toLowerCase() === form.issuing_organization.toLowerCase() &&
+        (cert.certification_key === certKey || 
+        (cert.title.toLowerCase() === form.title.toLowerCase() &&
+        cert.issuing_organization.toLowerCase() === form.issuing_organization.toLowerCase())) &&
         cert.id !== editingCert?.id
     )
+    
     if (isDuplicate) {
-      setFormError('You have already added this course from this organization.')
+      setFormError('You have already added this certification from this organization. Each certification must be unique.')
       return
     }
 
@@ -337,6 +345,7 @@ function App() {
       user_id: activeUser?.id ?? '',
       title: form.title,
       issuing_organization: form.issuing_organization,
+      certification_key: certKey,
       issue_date: form.issue_date,
       file_url: form.fileData || '',
       fileName: form.fileName,
@@ -356,7 +365,11 @@ function App() {
       setIsModalOpen(false)
       setEditingCert(null)
     } catch (error: any) {
-      setFormError(error.message)
+      if (error.message?.includes('certifications_user_id_key_unique')) {
+        setFormError('This certification already exists for your account.')
+      } else {
+        setFormError(error.message)
+      }
     }
   }
 
