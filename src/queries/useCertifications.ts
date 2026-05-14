@@ -32,11 +32,11 @@ export const useCertifications = () => {
   })
 }
 
-export const useUpdateCertification = () => {
-  const queryClient = useQueryClient()
+import { useOptimisticMutation } from '../hooks/useOptimisticMutation'
 
-  return useMutation({
-    mutationFn: async (updates: Partial<Certification> & { id: number }) => {
+export const useUpdateCertification = () => {
+  return useOptimisticMutation<Certification[]>(
+    async (updates: Partial<Certification> & { id: number }) => {
       const { data, error } = await supabase
         .from('certifications')
         .update(updates)
@@ -46,30 +46,17 @@ export const useUpdateCertification = () => {
       if (error) throw error
       return data[0] as Certification
     },
-    onMutate: async (newCert) => {
-      await queryClient.cancelQueries({ queryKey: ['certifications'] })
-      const previousCertifications = queryClient.getQueryData<Certification[]>(['certifications'])
-
-      queryClient.setQueryData<Certification[]>(['certifications'], (old) =>
-        old?.map((cert) => (cert.id === newCert.id ? { ...cert, ...newCert } : cert))
-      )
-
-      return { previousCertifications }
-    },
-    onError: (err, newCert, context) => {
-      queryClient.setQueryData(['certifications'], context?.previousCertifications)
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['certifications'] })
-    },
-  })
+    {
+      queryKey: ['certifications'],
+      updateFn: (old, variables) => 
+        old?.map((cert) => (cert.id === variables.id ? { ...cert, ...variables } : cert)) ?? [],
+    }
+  )
 }
 
 export const useCreateCertification = () => {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: async (newCert: Omit<Certification, 'id' | 'created_at'>) => {
+  return useOptimisticMutation<Certification[]>(
+    async (newCert: Omit<Certification, 'id' | 'created_at'>) => {
       const { data, error } = await supabase
         .from('certifications')
         .insert([newCert])
@@ -78,17 +65,19 @@ export const useCreateCertification = () => {
       if (error) throw error
       return data[0] as Certification
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['certifications'] })
-    },
-  })
+    {
+      queryKey: ['certifications'],
+      updateFn: (old, variables) => [
+        { ...variables, id: Math.random(), created_at: new Date().toISOString() } as Certification,
+        ...(old ?? []),
+      ],
+    }
+  )
 }
 
 export const useDeleteCertification = () => {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: async (id: number) => {
+  return useOptimisticMutation<Certification[]>(
+    async (id: number) => {
       const { data, error } = await supabase
         .from('certifications')
         .delete()
@@ -98,8 +87,9 @@ export const useDeleteCertification = () => {
       if (error) throw error
       return data[0] as Certification
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['certifications'] })
-    },
-  })
+    {
+      queryKey: ['certifications'],
+      updateFn: (old, variables) => old?.filter((cert) => cert.id !== variables) ?? [],
+    }
+  )
 }

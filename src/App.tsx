@@ -33,6 +33,10 @@ import { useFormStore } from './store/useFormStore'
 import { useRealtimeForm } from './hooks/useRealtimeForm'
 import { useCertifications, useCreateCertification, useUpdateCertification, useDeleteCertification } from './queries/useCertifications'
 import { useRealtimeSync } from './hooks/useRealtimeSync'
+import { useAuthStore } from './store/useAuthStore'
+import { useDashboardStore } from './store/useDashboardStore'
+import { HydrationManager } from './components/HydrationManager'
+import { useOfflineSync } from './hooks/useOfflineSync'
 import './App.css'
 import ChatBot from './components/ChatBot'
 
@@ -98,9 +102,19 @@ const certSchema = z.object({
 })
 
 function App() {
-  const [screen, setScreen] = useState<Screen>('landing')
+  const { screen, setScreen, activeUser, setActiveUser, logout } = useAuthStore()
+  const { 
+    searchQuery: query, 
+    setSearchQuery: setQuery, 
+    modalState, 
+    setModalOpen,
+    scrollPositions,
+    setScrollPosition 
+  } = useDashboardStore()
+  
   const [isTransitioning, setIsTransitioning] = useState(false)
   const { data: certifications = [], refetch, isFetching } = useCertifications()
+  const { isOnline } = useOfflineSync()
 
   const navigateTo = (targetScreen: Screen) => {
     setIsTransitioning(true)
@@ -113,10 +127,11 @@ function App() {
   const updateCertificationMutation = useUpdateCertification()
   const deleteCertificationMutation = useDeleteCertification()
   const [peopleState, setPeopleState] = useState<Record<string, Profile>>(people)
-  const [activeUser, setActiveUser] = useState<Profile | null>(null)
-  const [isModalOpen, setIsModalOpen] = useState(false)
+  
+  const isModalOpen = modalState['add-certification'] || false
+  const setIsModalOpen = (open: boolean) => setModalOpen('add-certification', open)
+  
   const [selectedCert, setSelectedCert] = useState<Certification | null>(null)
-  const [query, setQuery] = useState('')
   const [reviewText, setReviewText] = useState('')
   const [emoji, setEmoji] = useState('')
   const [editingCert, setEditingCert] = useState<Certification | null>(null)
@@ -127,6 +142,27 @@ function App() {
 
   const [viewingCert, setViewingCert] = useState<Certification | null>(null)
   const [formError, setFormError] = useState('')
+
+  // Scroll restoration
+  useEffect(() => {
+    const handleScroll = (e: Event) => {
+      const target = e.target as HTMLElement
+      if (target && target.scrollTop !== undefined) {
+        setScrollPosition(screen, target.scrollTop)
+      }
+    }
+    
+    const mainElement = document.querySelector('main')
+    if (mainElement) {
+      mainElement.addEventListener('scroll', handleScroll)
+      // Restore scroll
+      if (scrollPositions[screen]) {
+        mainElement.scrollTop = scrollPositions[screen]
+      }
+    }
+    
+    return () => mainElement?.removeEventListener('scroll', handleScroll)
+  }, [screen, setScrollPosition, scrollPositions])
 
   const handleDeleteCertification = async (id: number) => {
     if (window.confirm('Are you sure you want to delete this certification?')) {
@@ -154,18 +190,6 @@ function App() {
 
   // Initialize realtime sync
   useRealtimeSync()
-
-  const [isOnline, setIsOnline] = useState(navigator.onLine)
-  useEffect(() => {
-    const handleOnline = () => setIsOnline(true)
-    const handleOffline = () => setIsOnline(false)
-    window.addEventListener('online', handleOnline)
-    window.addEventListener('offline', handleOffline)
-    return () => {
-      window.removeEventListener('online', handleOnline)
-      window.removeEventListener('offline', handleOffline)
-    }
-  }, [])
 
   const fetchData = useCallback(async () => {
     try {
@@ -430,8 +454,7 @@ function App() {
             {activeUser && screen !== 'login' && screen !== 'signup' ? (
               <>
                 <button onClick={() => {
-                  setActiveUser(null);
-                  navigateTo('landing');
+                  logout();
                 }} className="hidden rounded-full px-4 py-2 text-sm font-bold text-slate-700 hover:bg-white sm:inline-flex" title="Log out">Log out</button>
                 <button onClick={() => navigateTo('signup')} className="rounded-full bg-[#3654ff] px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-[#2541d8] transition" title="Create a new account">Sign up</button>
               </>
@@ -445,45 +468,53 @@ function App() {
         </div>
       </header>
 
-      <div className="relative z-10">
-        {screen === 'landing' && <LandingPage onLogin={() => navigateTo('login')} onSignup={() => navigateTo('signup')} />}
-        {(screen === 'login' || screen === 'signup') && <AuthPanel key={screen} mode={screen} onLogin={handleLogin} onSignup={handleSignup} onSwitchMode={(m) => navigateTo(m)} />}
-        {screen === 'user' && activeUser && activeUser.role === 'user' && (
-          <UserDashboard
-            user={activeUser}
-            certifications={myCertifications}
-            allCertifications={certifications}
-            people={peopleState}
-            onAdd={() => setIsModalOpen(true)}
-            onView={setViewingCert}
-            onUpload={handleUploadDocument}
-            onRemove={handleRemoveDocument}
-            onRefresh={handleRefresh}
-            isRefreshing={isFetching}
-            onEdit={handleEditCertification}
-            onDelete={handleDeleteCertification}
-          />
-        )}
-        {screen === 'admin' && activeUser && activeUser.role === 'admin' && (
-          <AdminDashboard
-            admin={activeUser}
-            certifications={certifications}
-            people={peopleState}
-            query={query}
-            setQuery={setQuery}
-            reviewedCount={certifications.filter(c => c.admin_review).length}
-            pendingCount={certifications.filter(c => !c.admin_review).length}
-            onReview={(cert) => {
-              setSelectedCert(cert)
-              setReviewText(activeUser.role === 'admin' ? cert.admin_review : (cert.notes || ''))
-              setEmoji(cert.emoji || '')
-            }}
-            onView={setViewingCert}
-            onRefresh={handleRefresh}
-            isRefreshing={isFetching}
-          />
-        )}
-      </div>
+      <HydrationManager 
+        fallback={
+          <div className="flex h-screen items-center justify-center bg-[#f7f3ea]">
+            <LoadingOverlay />
+          </div>
+        }
+      >
+        <div className="relative z-10">
+          {screen === 'landing' && <LandingPage onLogin={() => navigateTo('login')} onSignup={() => navigateTo('signup')} />}
+          {(screen === 'login' || screen === 'signup') && <AuthPanel key={screen} mode={screen} onLogin={handleLogin} onSignup={handleSignup} onSwitchMode={(m) => navigateTo(m)} />}
+          {screen === 'user' && activeUser && activeUser.role === 'user' && (
+            <UserDashboard
+              user={activeUser}
+              certifications={myCertifications}
+              allCertifications={certifications}
+              people={peopleState}
+              onAdd={() => setIsModalOpen(true)}
+              onView={setViewingCert}
+              onUpload={handleUploadDocument}
+              onRemove={handleRemoveDocument}
+              onRefresh={handleRefresh}
+              isRefreshing={isFetching}
+              onEdit={handleEditCertification}
+              onDelete={handleDeleteCertification}
+            />
+          )}
+          {screen === 'admin' && activeUser && activeUser.role === 'admin' && (
+            <AdminDashboard
+              admin={activeUser}
+              certifications={certifications}
+              people={peopleState}
+              query={query}
+              setQuery={setQuery}
+              reviewedCount={certifications.filter(c => c.admin_review).length}
+              pendingCount={certifications.filter(c => !c.admin_review).length}
+              onReview={(cert) => {
+                setSelectedCert(cert)
+                setReviewText(activeUser.role === 'admin' ? cert.admin_review : (cert.notes || ''))
+                setEmoji(cert.emoji || '')
+              }}
+              onView={setViewingCert}
+              onRefresh={handleRefresh}
+              isRefreshing={isFetching}
+            />
+          )}
+        </div>
+      </HydrationManager>
 
       {isModalOpen && (
         <AddCertificationDialog
