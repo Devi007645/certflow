@@ -832,89 +832,66 @@ function TeamProgressDashboard({ allCertifications, people, user, onView }: { al
   if (teamData.activeMembersCount === 0) return null
 
   return (
-    <div className="mt-16 rounded-[3rem] border border-white/40 bg-white/30 p-10 shadow-2xl backdrop-blur-3xl">
-      <div className="mb-12 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div className="mt-12 rounded-[2rem] border border-slate-200 bg-white/80 p-8 shadow-sm backdrop-blur-sm">
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="flex items-center gap-3">
-            <h2 className="text-4xl font-black tracking-tight text-slate-900">Teammates Progress</h2>
-            <div className="flex items-center gap-2 rounded-full bg-green-500/10 px-3 py-1 ring-1 ring-green-500/20">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-green-500"></span>
-              <span className="text-[10px] font-black uppercase tracking-widest text-green-600">Syncing</span>
-            </div>
-          </div>
-          <p className="mt-2 text-base font-bold text-slate-500/80">Monitor certification milestones and organizational learning across the team</p>
+          <h2 className="text-xl font-bold text-slate-900">Teammates Progress</h2>
+          <p className="text-sm font-medium text-slate-500">Ongoing certification journeys across the team</p>
         </div>
         
-        <div className="flex items-center gap-2 rounded-2xl bg-white/50 px-4 py-2 text-xs font-black text-slate-500 ring-1 ring-slate-900/5 shadow-sm">
-          <UsersRound className="h-4 w-4" />
-          {teamData.activeMembersCount} TEAM MEMBERS ACTIVE
+        <div className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-[10px] font-bold text-slate-500 uppercase tracking-widest border border-slate-200 shadow-sm">
+          <UsersRound className="h-3 w-3" />
+          {teamData.activeMembersCount} Active Members
         </div>
       </div>
 
-      <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         <AnimatePresence mode="popLayout">
           {Object.entries(teamData.groups).map(([userId, certs], idx) => {
             const person = people[userId]
-            const latestCert = certs[certs.length - 1]
-            const progress = latestCert.progress || (latestCert.admin_review ? 100 : 0)
             
             return (
               <motion.div
                 key={userId}
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: idx * 0.1 }}
-                className="group flex flex-col rounded-[2.5rem] border border-white/80 bg-white/60 p-8 shadow-xl transition-all hover:bg-white/80 hover:shadow-2xl hover:-translate-y-1"
+                transition={{ duration: 0.3, delay: idx * 0.05 }}
+                className="flex flex-col rounded-3xl border border-slate-100 bg-[#f8fafc]/50 p-6 transition-all hover:border-[#3654ff]/30 hover:shadow-md"
               >
-                <div className="mb-8 flex items-center gap-5">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-slate-900 text-white font-black text-3xl shadow-xl ring-8 ring-slate-50">
+                <div className="mb-5 flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-white font-bold text-base shadow-sm">
                     {person?.name?.[0]?.toUpperCase()}
                   </div>
                   <div className="min-w-0">
-                    <p className="truncate text-xl font-black text-slate-900 tracking-tight">{person?.name}</p>
-                    <p className="truncate text-xs font-bold uppercase tracking-wider text-slate-400">{person?.department || 'Member'}</p>
+                    <p className="truncate text-sm font-bold text-slate-900 leading-tight">{person?.name}</p>
+                    <p className="truncate text-[10px] font-bold text-slate-400 uppercase tracking-wider">{person?.department || 'General'}</p>
                   </div>
                 </div>
 
-                <div className="mb-8 space-y-4">
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-[#3654ff]">{latestCert.issuing_organization}</p>
-                    <p className="text-lg font-black text-slate-800 leading-tight" title={latestCert.title}>{latestCert.title}</p>
-                  </div>
-                  
-                  <div className="relative pt-1">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Current Milestone</span>
-                      <span className="text-[10px] font-black text-slate-900">{progress}%</span>
+                <div className="space-y-3">
+                  {certs.map((cert) => (
+                    <div key={cert.id} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition-colors hover:bg-slate-50">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[9px] font-black uppercase tracking-widest text-[#3654ff] mb-0.5">{cert.issuing_organization}</p>
+                          <p className="text-xs font-bold text-slate-800 leading-snug" title={cert.title}>{cert.title}</p>
+                          <div className="mt-2 flex items-center gap-1.5 text-[10px] font-medium text-slate-400">
+                            <CalendarDays className="h-3 w-3" />
+                            <span>Ends: {formatDate(cert.probable_completion_time)}</span>
+                          </div>
+                        </div>
+                        {cert.fileName && (
+                          <button 
+                            onClick={() => onView(cert)}
+                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-slate-400 transition-all hover:bg-[#3654ff]/10 hover:text-[#3654ff]"
+                            title="View document"
+                          >
+                            <FileText className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    <div className="h-4 w-full overflow-hidden rounded-full bg-slate-100/50 p-1 ring-1 ring-slate-200/50">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${progress}%` }}
-                        transition={{ duration: 1.5, ease: "circOut" }}
-                        className="h-full rounded-full bg-gradient-to-r from-[#3654ff] to-[#a855f7]"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-auto flex items-center justify-between pt-6 border-t border-slate-100">
-                  <div className="flex items-center gap-2 rounded-xl bg-slate-100/80 px-4 py-2 ring-1 ring-slate-200/30">
-                    <CalendarDays className="h-4 w-4 text-slate-500" />
-                    <span className="text-[11px] font-black text-slate-600">
-                      {formatDate(latestCert.probable_completion_time)}
-                    </span>
-                  </div>
-                  
-                  {latestCert.fileName && (
-                    <button 
-                      onClick={() => onView(latestCert)}
-                      className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-slate-400 shadow-sm ring-1 ring-slate-200 transition-all hover:bg-[#3654ff] hover:text-white hover:ring-[#3654ff] hover:shadow-lg"
-                      title="View document"
-                    >
-                      <FileText className="h-5 w-5" />
-                    </button>
-                  )}
+                  ))}
                 </div>
               </motion.div>
             )
