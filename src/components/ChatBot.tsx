@@ -53,7 +53,6 @@ const ChatBot: React.FC<ChatBotProps> = ({ activeUser, certifications, people })
     const allPeople = Object.values(people);
     const adminIds = allPeople.filter(p => p.role === 'admin').map(p => p.id);
     
-    // For employees, they can see teammates' certs but not admin certs
     const visibleCerts = activeUser.role === 'admin' 
       ? certifications 
       : certifications.filter(c => !adminIds.includes(c.user_id));
@@ -76,37 +75,34 @@ const ChatBot: React.FC<ChatBotProps> = ({ activeUser, certifications, people })
     });
 
     return `
-      You are the "Proofly AI Intelligence", the core brain of the Proofly Certification Tracking System. 
-      You are NOT a general AI assistant. You are a specialized tool for this workspace.
+      You are the "Proofly AI Intelligence". Your goal is to provide DIRECT, QUESTION-SPECIFIC answers.
 
       IDENTITY & SCOPE:
       - You operate ONLY within the context of certifications, user progress, and teammate tracking.
-      - If a user asks about anything outside of this project (e.g., weather, generic advice, general knowledge), politely refuse and refocus them on the Certification workspace.
-      - NEVER say you don't have access to personal information. You DO have access to the data provided below and you MUST use it to answer precisely.
+      - Refuse non-workspace questions politely and refocus on Proofly.
+      - NEVER say you don't have access to information. Use the data provided below as your absolute source of truth.
 
-      USER CONTEXT:
+      RESPONSE STYLE (STRICT):
+      1. ANSWER DIRECTLY: If the user asks a question, answer it in the FIRST sentence.
+      2. NO BOILERPLATE: NEVER start with "Based on the data" or "In your workspace". Just state the facts directly.
+      3. BE CONCISE: Keep responses to 1-2 sentences. 
+      4. SPECIFICITY: If asked "how many", give the exact number first. 
+      5. BOLDING: Use **bold** for key numbers, names, and statuses.
+      6. NO SMALL TALK: For follow-up questions, skip greetings and get straight to the data.
+
+      USER INFO:
       - Name: ${activeUser.name}
       - Role: ${activeUser.role.toUpperCase()}
-      - Department: ${activeUser.department}
-      - YOUR PROGRESS: ${approvedCerts} Approved, ${pendingCerts} Pending Review. Total: ${myCerts.length}
-
-      ROLE-SPECIFIC BEHAVIOR:
-      - ADMIN: You are their "Second Hand" / "Copilot". Help them identify who needs review, summarize stats, and find specific employee records.
-      - EMPLOYEE: Help them track their own progress and see what teammates are working on.
-
-      STRICT RULES:
-      1. Responses MUST be concise but informative.
-      2. USE BOLDING (e.g. **important term**) for key information to make it readable at a glance.
-      3. Be creative and professional. Use emojis sparingly but effectively.
-      4. If asked where to see teammates' certifications, tell them: "It's listed at the end of the dashboard page."
-      5. For questions about "progress", refer to the "YOUR PROGRESS" data above.
-      6. Never reveal admin certifications to non-admin users.
-      7. Use the data below as your absolute source of truth.
+      - YOUR STATS: ${approvedCerts} Approved, ${pendingCerts} Pending. Total: ${myCerts.length}
 
       WORKSPACE DATA:
-      - Total Records: ${certsData.length}
-      - Teammate Names: ${allPeople.filter(p => p.role === 'user' && p.id !== activeUser.id).map(p => p.name).join(', ')}
-      - FULL DATA: ${JSON.stringify(certsData)}
+      - Total System Records: ${certsData.length}
+      - Teammates: ${allPeople.filter(p => p.role === 'user' && p.id !== activeUser.id).map(p => p.name).join(', ')}
+      - FULL JSON DATA: ${JSON.stringify(certsData)}
+
+      Example of GOOD Response:
+      User: "How many have been reviewed?"
+      AI: "You have **0** approved certifications. All **6** current records are **Pending Review**."
     `;
   }
 
@@ -166,19 +162,16 @@ const ChatBot: React.FC<ChatBotProps> = ({ activeUser, certifications, people })
           <motion.div
             drag
             dragMomentum={false}
-            layout
-            initial={{ opacity: 0, y: 50, scale: 0.9, filter: 'blur(10px)' }}
+            initial={{ opacity: 0, scale: 0.95 }}
             animate={{ 
               opacity: 1, 
-              y: 0, 
               scale: 1,
-              filter: 'blur(0px)',
               height: isMinimized ? '80px' : '520px',
               width: '400px'
             }}
-            exit={{ opacity: 0, y: 50, scale: 0.9, filter: 'blur(10px)' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="mb-4 overflow-hidden rounded-[2.5rem] border border-white/40 bg-white/70 shadow-[0_20px_50px_rgba(0,0,0,0.15)] backdrop-blur-3xl pointer-events-auto cursor-default"
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="mb-4 overflow-hidden rounded-[2.5rem] border border-white/40 bg-white/80 shadow-[0_20px_50px_rgba(0,0,0,0.15)] backdrop-blur-2xl pointer-events-auto cursor-default"
           >
             {/* Header - Drag Handle */}
             <div className="flex items-center justify-between bg-gradient-to-r from-[#3654ff] to-[#7c3aed] p-5 text-white shadow-lg cursor-move select-none">
@@ -270,8 +263,9 @@ const ChatBot: React.FC<ChatBotProps> = ({ activeUser, certifications, people })
                   {messages.map((m, i) => (
                     <motion.div 
                       key={i}
-                      initial={{ opacity: 0, x: m.role === 'user' ? 20 : -20 }}
-                      animate={{ opacity: 1, x: 0 }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.1 }}
                       className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
                       <div className={`flex gap-3 max-w-[85%] ${m.role === 'user' ? 'flex-row-reverse' : ''}`}>
@@ -295,8 +289,9 @@ const ChatBot: React.FC<ChatBotProps> = ({ activeUser, certifications, people })
                   ))}
                   {streamingText && (
                     <motion.div 
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.1 }}
                       className="flex justify-start"
                     >
                       <div className="flex gap-3 max-w-[85%]">
@@ -312,8 +307,9 @@ const ChatBot: React.FC<ChatBotProps> = ({ activeUser, certifications, people })
 
                   {isLoading && !streamingText && (
                     <motion.div 
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.1 }}
                       className="flex justify-start"
                     >
                       <div className="flex gap-3 max-w-[85%]">
@@ -365,24 +361,18 @@ const ChatBot: React.FC<ChatBotProps> = ({ activeUser, certifications, people })
       </AnimatePresence>
 
       <motion.button
-        layout
-        whileHover={{ 
-          scale: 1.1, 
-          rotate: 5,
-          boxShadow: '0 20px 40px rgba(54, 84, 255, 0.4)' 
-        }}
-        whileTap={{ scale: 0.9 }}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
         onClick={() => {
           setIsOpen(true)
           setIsMinimized(false)
         }}
-        className={`group relative flex h-16 w-16 items-center justify-center rounded-[1.8rem] bg-gradient-to-br from-[#3654ff] via-[#5d75ff] to-[#7c3aed] text-white shadow-[0_10px_30px_rgba(54,84,255,0.3)] transition-all duration-500 pointer-events-auto ${
-          isOpen ? 'opacity-0 scale-0 rotate-90' : 'opacity-100 scale-100 rotate-0'
+        className={`group relative flex h-16 w-16 items-center justify-center rounded-[1.8rem] bg-gradient-to-br from-[#3654ff] via-[#5d75ff] to-[#7c3aed] text-white shadow-lg transition-all pointer-events-auto ${
+          isOpen ? 'opacity-0 scale-0' : 'opacity-100 scale-100'
         }`}
       >
-        <div className="absolute inset-0 rounded-[1.8rem] bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity blur-md" />
         <div className="relative">
-          <Sparkles className="h-8 w-8 transition-all group-hover:scale-110" />
+          <Sparkles className="h-8 w-8" />
           <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full border-2 border-[#3654ff] bg-green-400 shadow-sm" />
         </div>
       </motion.button>
