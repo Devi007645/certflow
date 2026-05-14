@@ -815,45 +815,6 @@ function AuthPanel({ mode, onLogin, onSignup, onSwitchMode }: { mode: 'login' | 
   )
 }
 
-const CircleProgress = ({ percentage, size = 42, strokeWidth = 4, className = "" }: { percentage: number; size?: number; strokeWidth?: number; className?: string }) => {
-  const radius = (size - strokeWidth) / 2
-  const circumference = radius * 2 * Math.PI
-  const offset = circumference - (percentage / 100) * circumference
-
-  return (
-    <div className={`relative flex items-center justify-center ${className}`} style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="rotate-[-90deg]">
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="transparent"
-          stroke="currentColor"
-          strokeWidth={strokeWidth}
-          className="text-slate-200"
-        />
-        <motion.circle
-          initial={{ strokeDashoffset: circumference }}
-          animate={{ strokeDashoffset: offset }}
-          transition={{ duration: 1.5, ease: "easeOut" }}
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="transparent"
-          stroke="currentColor"
-          strokeWidth={strokeWidth}
-          strokeDasharray={circumference}
-          strokeLinecap="round"
-          className="text-[#3654ff]"
-        />
-      </svg>
-      <div className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-slate-800">
-        {Math.round(percentage)}%
-      </div>
-    </div>
-  )
-}
-
 function TeamProgressDashboard({ allCertifications, people, user, onView }: { allCertifications: Certification[]; people: Record<string, Profile>; user: Profile; onView: (cert: Certification) => void }) {
   const teamData = useMemo(() => {
     const groups = allCertifications.reduce((acc, cert) => {
@@ -864,60 +825,33 @@ function TeamProgressDashboard({ allCertifications, people, user, onView }: { al
       return acc
     }, {} as Record<string, Certification[]>)
 
-    const activeMembers = Object.keys(groups).length
-    const totalProgress = allCertifications.reduce((sum, c) => sum + (c.progress || (c.admin_review ? 100 : 0)), 0)
-    const avgCompletion = allCertifications.length > 0 ? Math.round(totalProgress / allCertifications.length) : 0
-
-    return { groups, activeMembers, avgCompletion }
+    const activeMembersCount = Object.keys(groups).length
+    return { groups, activeMembersCount }
   }, [allCertifications, user.id])
 
+  if (teamData.activeMembersCount === 0) return null
+
   return (
-    <div className="mt-12 rounded-[2.5rem] border border-white/40 bg-white/40 p-8 shadow-2xl backdrop-blur-2xl">
-      <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+    <div className="mt-16 rounded-[3rem] border border-white/40 bg-white/30 p-10 shadow-2xl backdrop-blur-3xl">
+      <div className="mb-12 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="flex items-center gap-3">
-            <h2 className="text-3xl font-black tracking-tight text-slate-900">Team Progress</h2>
-            <span className="relative flex h-3 w-3">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
-              <span className="relative inline-flex h-3 w-3 rounded-full bg-green-500 border-2 border-white shadow-sm"></span>
-              <span className="ml-5 text-[10px] font-bold text-green-600 uppercase tracking-widest mt-[-2px]">Live</span>
-            </span>
+            <h2 className="text-4xl font-black tracking-tight text-slate-900">Teammates Progress</h2>
+            <div className="flex items-center gap-2 rounded-full bg-green-500/10 px-3 py-1 ring-1 ring-green-500/20">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-green-500"></span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-green-600">Syncing</span>
+            </div>
           </div>
-          <p className="mt-1 text-sm font-bold text-slate-500">Real-time synchronization of peer certification journeys</p>
+          <p className="mt-2 text-base font-bold text-slate-500/80">Monitor certification milestones and organizational learning across the team</p>
         </div>
-
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-4 rounded-3xl bg-white/60 p-2 pr-6 shadow-sm border border-white/80">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#3654ff]/10 text-[#3654ff]">
-              <Activity className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="text-xl font-black text-slate-900">{teamData.avgCompletion}%</p>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Avg Completion</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4 rounded-3xl bg-white/60 p-2 pr-6 shadow-sm border border-white/80">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f7c948]/10 text-[#f7c948]">
-              <UsersRound className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="text-xl font-black text-slate-900">{teamData.activeMembers}</p>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Active Members</p>
-            </div>
-          </div>
-
-          <div className="hidden sm:block">
-            <select className="rounded-2xl border-2 border-white/80 bg-white/60 px-5 py-3 text-sm font-bold text-slate-600 shadow-sm outline-none backdrop-blur-md">
-              <option>This Week</option>
-              <option>Last Week</option>
-              <option>All Time</option>
-            </select>
-          </div>
+        
+        <div className="flex items-center gap-2 rounded-2xl bg-white/50 px-4 py-2 text-xs font-black text-slate-500 ring-1 ring-slate-900/5 shadow-sm">
+          <UsersRound className="h-4 w-4" />
+          {teamData.activeMembersCount} TEAM MEMBERS ACTIVE
         </div>
       </div>
 
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
         <AnimatePresence mode="popLayout">
           {Object.entries(teamData.groups).map(([userId, certs], idx) => {
             const person = people[userId]
@@ -927,74 +861,60 @@ function TeamProgressDashboard({ allCertifications, people, user, onView }: { al
             return (
               <motion.div
                 key={userId}
-                initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ duration: 0.4, delay: idx * 0.1 }}
-                whileHover={{ y: -5, transition: { duration: 0.2 } }}
-                className="group relative flex flex-col rounded-[2rem] border border-white/60 bg-white/70 p-6 shadow-xl transition-all hover:bg-white/90 hover:shadow-2xl"
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: idx * 0.1 }}
+                className="group flex flex-col rounded-[2.5rem] border border-white/80 bg-white/60 p-8 shadow-xl transition-all hover:bg-white/80 hover:shadow-2xl hover:-translate-y-1"
               >
-                {progress > 90 && (
-                  <div className="absolute -top-3 left-6 flex items-center gap-1.5 rounded-full bg-[#f7c948] px-3 py-1 shadow-lg border-2 border-white">
-                    <Award className="h-3 w-3 text-slate-900" />
-                    <span className="text-[10px] font-black text-slate-900 uppercase">Top Performer</span>
+                <div className="mb-8 flex items-center gap-5">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-slate-900 text-white font-black text-3xl shadow-xl ring-8 ring-slate-50">
+                    {person?.name?.[0]?.toUpperCase()}
                   </div>
-                )}
-
-                <div className="mb-6 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="relative">
-                      <div className="flex h-14 w-14 items-center justify-center rounded-[1.25rem] bg-slate-950 text-white font-black text-2xl shadow-lg ring-4 ring-slate-100">
-                        {person?.name?.[0]?.toUpperCase()}
-                      </div>
-                    </div>
-                    <div className="min-w-0">
-                      <p className="truncate text-lg font-black text-slate-900 leading-tight">{person?.name}</p>
-                      <p className="truncate text-xs font-bold text-slate-400">{person?.department || 'Engineering'}</p>
-                    </div>
-                  </div>
-                  <CircleProgress percentage={progress} />
-                </div>
-
-                <div className="mb-4">
-                  <div className="flex items-center justify-between mb-2 px-1">
-                    <p className="text-sm font-black text-slate-800 truncate" title={latestCert.title}>{latestCert.title}</p>
-                    <span className="text-xs font-black text-[#3654ff]">{progress}%</span>
-                  </div>
-                  <div className="h-3 w-full overflow-hidden rounded-full bg-slate-100 p-[2px] ring-1 ring-slate-200">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${progress}%` }}
-                      transition={{ duration: 1.5, ease: "easeOut" }}
-                      className="h-full rounded-full bg-gradient-to-r from-[#3654ff] via-[#3654ff] to-[#a855f7]"
-                    />
+                  <div className="min-w-0">
+                    <p className="truncate text-xl font-black text-slate-900 tracking-tight">{person?.name}</p>
+                    <p className="truncate text-xs font-bold uppercase tracking-wider text-slate-400">{person?.department || 'Member'}</p>
                   </div>
                 </div>
 
-                <div className="mt-auto pt-6 border-t border-slate-100">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center gap-1.5 text-green-500">
-                      <TrendingUp className="h-4 w-4" />
-                      <span className="text-[11px] font-black">+{Math.floor(Math.random() * 15) + 5}% this week</span>
+                <div className="mb-8 space-y-4">
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-[#3654ff]">{latestCert.issuing_organization}</p>
+                    <p className="text-lg font-black text-slate-800 leading-tight" title={latestCert.title}>{latestCert.title}</p>
+                  </div>
+                  
+                  <div className="relative pt-1">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Current Milestone</span>
+                      <span className="text-[10px] font-black text-slate-900">{progress}%</span>
                     </div>
-                    
-                    <div className="flex items-center gap-4">
-                      {latestCert.fileName && (
-                        <button 
-                          onClick={() => onView(latestCert)}
-                          className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#3654ff]/10 text-[#3654ff] transition-all hover:bg-[#3654ff] hover:text-white"
-                          title="View document"
-                        >
-                          <FileText className="h-4 w-4" />
-                        </button>
-                      )}
-                      <div className="flex items-center gap-2 rounded-xl bg-slate-100 px-3 py-2">
-                        <CalendarDays className="h-4 w-4 text-slate-400" />
-                        <span className="text-[11px] font-black text-slate-500">
-                          {Math.random() > 0.5 ? `Due in ${Math.floor(Math.random() * 5) + 1} Days` : formatDate(latestCert.probable_completion_time)}
-                        </span>
-                      </div>
+                    <div className="h-4 w-full overflow-hidden rounded-full bg-slate-100/50 p-1 ring-1 ring-slate-200/50">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${progress}%` }}
+                        transition={{ duration: 1.5, ease: "circOut" }}
+                        className="h-full rounded-full bg-gradient-to-r from-[#3654ff] to-[#a855f7]"
+                      />
                     </div>
                   </div>
+                </div>
+
+                <div className="mt-auto flex items-center justify-between pt-6 border-t border-slate-100">
+                  <div className="flex items-center gap-2 rounded-xl bg-slate-100/80 px-4 py-2 ring-1 ring-slate-200/30">
+                    <CalendarDays className="h-4 w-4 text-slate-500" />
+                    <span className="text-[11px] font-black text-slate-600">
+                      {formatDate(latestCert.probable_completion_time)}
+                    </span>
+                  </div>
+                  
+                  {latestCert.fileName && (
+                    <button 
+                      onClick={() => onView(latestCert)}
+                      className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-slate-400 shadow-sm ring-1 ring-slate-200 transition-all hover:bg-[#3654ff] hover:text-white hover:ring-[#3654ff] hover:shadow-lg"
+                      title="View document"
+                    >
+                      <FileText className="h-5 w-5" />
+                    </button>
+                  )}
                 </div>
               </motion.div>
             )
