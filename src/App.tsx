@@ -406,7 +406,7 @@ function App() {
         <div className="absolute top-1/4 left-1/3 h-64 w-64 rounded-full bg-[#a855f7]/25 blur-3xl" />
       </div>
 
-      <header className={`sticky top-0 z-40 border-b border-slate-900/10 transition-all duration-300 ${isScrolled ? 'bg-[#f7f3ea]/70 backdrop-blur-md' : 'bg-[#f7f3ea]'}`}>
+      <header className={`sticky top-0 z-40 border-b border-slate-900/10 transition-all duration-300 ${isScrolled ? 'bg-[#f7f3ea]/30 backdrop-blur-xl' : 'bg-[#f7f3ea]'}`}>
         <div className={`mx-auto flex max-w-7xl items-center justify-between px-4 transition-all duration-300 ${isScrolled ? 'py-3' : 'py-4'} sm:px-6 lg:px-8`}>
           <div className="flex items-center gap-4">
             <svg width="64" height="64" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
