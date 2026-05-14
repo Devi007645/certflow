@@ -21,7 +21,7 @@ export const getGeminiStreamResponse = async (
 
   try {
     const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash', // Flash is faster for streaming
+      model: 'gemini-3.1-flash-lite', // Dont change this model
       systemInstruction: context,
     })
 
