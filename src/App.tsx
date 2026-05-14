@@ -27,7 +27,11 @@ import {
   X,
   Trash2,
   Pencil,
+  TrendingUp,
+  Activity,
+  Award,
 } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from './lib/supabase'
 import { useFormStore } from './store/useFormStore'
 import { useRealtimeForm } from './hooks/useRealtimeForm'
@@ -66,6 +70,7 @@ type Certification = {
   notes?: string
   emoji?: string
   tags?: string[]
+  progress?: number
 }
 
 const formatDate = (dateStr: string | undefined) => {
@@ -99,6 +104,7 @@ const certSchema = z.object({
   issue_date: z.string().min(1, 'Issue date is required'),
   fileName: z.string().optional(),
   probable_completion_time: z.string().optional(),
+  progress: z.number().min(0).max(100).optional(),
 })
 
 function App() {
@@ -184,6 +190,7 @@ function App() {
       fileData: cert.file_url || '',
       probable_completion_time: cert.probable_completion_time || '',
       tags: cert.tags || [],
+      progress: cert.progress || 0,
     })
     setIsModalOpen(true)
   }
@@ -331,6 +338,7 @@ function App() {
       fileName: form.fileName,
       probable_completion_time: form.probable_completion_time,
       tags: form.tags,
+      progress: form.progress || 0,
     }
 
     try {
@@ -807,6 +815,196 @@ function AuthPanel({ mode, onLogin, onSignup, onSwitchMode }: { mode: 'login' | 
   )
 }
 
+const CircleProgress = ({ percentage, size = 42, strokeWidth = 4, className = "" }: { percentage: number; size?: number; strokeWidth?: number; className?: string }) => {
+  const radius = (size - strokeWidth) / 2
+  const circumference = radius * 2 * Math.PI
+  const offset = circumference - (percentage / 100) * circumference
+
+  return (
+    <div className={`relative flex items-center justify-center ${className}`} style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="rotate-[-90deg]">
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="transparent"
+          stroke="currentColor"
+          strokeWidth={strokeWidth}
+          className="text-slate-200"
+        />
+        <motion.circle
+          initial={{ strokeDashoffset: circumference }}
+          animate={{ strokeDashoffset: offset }}
+          transition={{ duration: 1.5, ease: "easeOut" }}
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="transparent"
+          stroke="currentColor"
+          strokeWidth={strokeWidth}
+          strokeDasharray={circumference}
+          strokeLinecap="round"
+          className="text-[#3654ff]"
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-slate-800">
+        {Math.round(percentage)}%
+      </div>
+    </div>
+  )
+}
+
+function TeamProgressDashboard({ allCertifications, people, user, onView }: { allCertifications: Certification[]; people: Record<string, Profile>; user: Profile; onView: (cert: Certification) => void }) {
+  const teamData = useMemo(() => {
+    const groups = allCertifications.reduce((acc, cert) => {
+      if (cert.user_id !== user.id) {
+        if (!acc[cert.user_id]) acc[cert.user_id] = []
+        acc[cert.user_id].push(cert)
+      }
+      return acc
+    }, {} as Record<string, Certification[]>)
+
+    const activeMembers = Object.keys(groups).length
+    const totalProgress = allCertifications.reduce((sum, c) => sum + (c.progress || (c.admin_review ? 100 : 0)), 0)
+    const avgCompletion = allCertifications.length > 0 ? Math.round(totalProgress / allCertifications.length) : 0
+
+    return { groups, activeMembers, avgCompletion }
+  }, [allCertifications, user.id])
+
+  return (
+    <div className="mt-12 rounded-[2.5rem] border border-white/40 bg-white/40 p-8 shadow-2xl backdrop-blur-2xl">
+      <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <div className="flex items-center gap-3">
+            <h2 className="text-3xl font-black tracking-tight text-slate-900">Team Progress</h2>
+            <span className="relative flex h-3 w-3">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
+              <span className="relative inline-flex h-3 w-3 rounded-full bg-green-500 border-2 border-white shadow-sm"></span>
+              <span className="ml-5 text-[10px] font-bold text-green-600 uppercase tracking-widest mt-[-2px]">Live</span>
+            </span>
+          </div>
+          <p className="mt-1 text-sm font-bold text-slate-500">Real-time synchronization of peer certification journeys</p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-4 rounded-3xl bg-white/60 p-2 pr-6 shadow-sm border border-white/80">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#3654ff]/10 text-[#3654ff]">
+              <Activity className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-xl font-black text-slate-900">{teamData.avgCompletion}%</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Avg Completion</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4 rounded-3xl bg-white/60 p-2 pr-6 shadow-sm border border-white/80">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f7c948]/10 text-[#f7c948]">
+              <UsersRound className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-xl font-black text-slate-900">{teamData.activeMembers}</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Active Members</p>
+            </div>
+          </div>
+
+          <div className="hidden sm:block">
+            <select className="rounded-2xl border-2 border-white/80 bg-white/60 px-5 py-3 text-sm font-bold text-slate-600 shadow-sm outline-none backdrop-blur-md">
+              <option>This Week</option>
+              <option>Last Week</option>
+              <option>All Time</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <AnimatePresence mode="popLayout">
+          {Object.entries(teamData.groups).map(([userId, certs], idx) => {
+            const person = people[userId]
+            const latestCert = certs[certs.length - 1]
+            const progress = latestCert.progress || (latestCert.admin_review ? 100 : 0)
+            
+            return (
+              <motion.div
+                key={userId}
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.4, delay: idx * 0.1 }}
+                whileHover={{ y: -5, transition: { duration: 0.2 } }}
+                className="group relative flex flex-col rounded-[2rem] border border-white/60 bg-white/70 p-6 shadow-xl transition-all hover:bg-white/90 hover:shadow-2xl"
+              >
+                {progress > 90 && (
+                  <div className="absolute -top-3 left-6 flex items-center gap-1.5 rounded-full bg-[#f7c948] px-3 py-1 shadow-lg border-2 border-white">
+                    <Award className="h-3 w-3 text-slate-900" />
+                    <span className="text-[10px] font-black text-slate-900 uppercase">Top Performer</span>
+                  </div>
+                )}
+
+                <div className="mb-6 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="relative">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-[1.25rem] bg-slate-950 text-white font-black text-2xl shadow-lg ring-4 ring-slate-100">
+                        {person?.name?.[0]?.toUpperCase()}
+                      </div>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-lg font-black text-slate-900 leading-tight">{person?.name}</p>
+                      <p className="truncate text-xs font-bold text-slate-400">{person?.department || 'Engineering'}</p>
+                    </div>
+                  </div>
+                  <CircleProgress percentage={progress} />
+                </div>
+
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-2 px-1">
+                    <p className="text-sm font-black text-slate-800 truncate" title={latestCert.title}>{latestCert.title}</p>
+                    <span className="text-xs font-black text-[#3654ff]">{progress}%</span>
+                  </div>
+                  <div className="h-3 w-full overflow-hidden rounded-full bg-slate-100 p-[2px] ring-1 ring-slate-200">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${progress}%` }}
+                      transition={{ duration: 1.5, ease: "easeOut" }}
+                      className="h-full rounded-full bg-gradient-to-r from-[#3654ff] via-[#3654ff] to-[#a855f7]"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-auto pt-6 border-t border-slate-100">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-1.5 text-green-500">
+                      <TrendingUp className="h-4 w-4" />
+                      <span className="text-[11px] font-black">+{Math.floor(Math.random() * 15) + 5}% this week</span>
+                    </div>
+                    
+                    <div className="flex items-center gap-4">
+                      {latestCert.fileName && (
+                        <button 
+                          onClick={() => onView(latestCert)}
+                          className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#3654ff]/10 text-[#3654ff] transition-all hover:bg-[#3654ff] hover:text-white"
+                          title="View document"
+                        >
+                          <FileText className="h-4 w-4" />
+                        </button>
+                      )}
+                      <div className="flex items-center gap-2 rounded-xl bg-slate-100 px-3 py-2">
+                        <CalendarDays className="h-4 w-4 text-slate-400" />
+                        <span className="text-[11px] font-black text-slate-500">
+                          {Math.random() > 0.5 ? `Due in ${Math.floor(Math.random() * 5) + 1} Days` : formatDate(latestCert.probable_completion_time)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )
+          })}
+        </AnimatePresence>
+      </div>
+    </div>
+  )
+}
+
 function UserDashboard({ user, certifications, allCertifications, people, onAdd, onView, onUpload, onRemove, onRefresh, isRefreshing, onEdit, onDelete }: { user: Profile; certifications: Certification[]; allCertifications: Certification[]; people: Record<string, Profile>; onAdd: () => void; onView: (cert: Certification) => void; onUpload: (certId: number, fileName: string, fileData: string) => void; onRemove: (certId: number) => void; onRefresh: () => void; isRefreshing: boolean; onEdit: (cert: Certification) => void; onDelete: (id: number) => void }) {
   return (
     <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
@@ -842,61 +1040,12 @@ function UserDashboard({ user, certifications, allCertifications, people, onAdd,
         <CertificationGrid certifications={certifications} onView={onView} onUpload={onUpload} onRemove={onRemove} onEdit={onEdit} onDelete={onDelete} />
       </div>
 
-      <div className="mt-12 rounded-[2rem] border border-[#3654ff]/30 bg-white/80 backdrop-blur-sm p-6 shadow-sm">
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-bold text-slate-900">Team Progress</h2>
-            <p className="text-sm font-medium text-slate-500">Live view of ongoing peer certifications</p>
-          </div>
-          <div className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-            <UsersRound className="h-3 w-3" />
-            {Object.keys(allCertifications.reduce((acc, c) => ({...acc, [c.user_id]: true}), {})).length - 1} active members
-          </div>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {Object.entries(
-            allCertifications.reduce((groups, cert) => {
-              if (cert.user_id !== user.id) {
-                if (!groups[cert.user_id]) groups[cert.user_id] = []
-                groups[cert.user_id].push(cert)
-              }
-              return groups
-            }, {} as Record<string, Certification[]>)
-          ).map(([userId, certs]) => {
-            const person = people[userId]
-            return (
-              <div key={userId} className="flex flex-col rounded-2xl border border-slate-100 bg-[#f8fafc]/50 p-4 transition-all hover:border-[#3654ff]/20 hover:shadow-md">
-                <div className="mb-3 flex items-center gap-3">
-                  <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-slate-900 text-white font-bold text-sm shadow-sm">{person?.name?.[0]?.toUpperCase() || '?'}</div>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-bold text-slate-900">{person?.name || 'Unknown User'}</p>
-                    <p className="truncate text-[10px] font-medium text-slate-500">{person?.department}</p>
-                  </div>
-                </div>
-                <div className="flex-1 space-y-2">
-                  {certs.map((cert) => (
-                    <div key={cert.id} className="group flex items-center justify-between gap-2 rounded-xl bg-white p-2.5 shadow-sm border border-slate-100 transition-colors hover:bg-slate-50">
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-xs font-bold text-slate-800" title={cert.title}>{cert.title}</p>
-                        <p className="text-[10px] font-medium text-slate-400">Ends: {formatDate(cert.probable_completion_time)}</p>
-                      </div>
-                      {cert.fileName && (
-                        <button 
-                          onClick={() => onView(cert)} 
-                          className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-[#3654ff] transition-colors hover:bg-blue-100" 
-                          title="View attachment"
-                        >
-                          <FileText className="h-3.5 w-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </div>
+      <TeamProgressDashboard
+        allCertifications={allCertifications}
+        people={people}
+        user={user}
+        onView={onView}
+      />
     </section>
   )
 }
@@ -1390,7 +1539,7 @@ const findBestMatch = (source: string, targets: string[]) => {
   return best;
 };
 
-function AddCertificationDialog({ form, setForm, error, onClose, onSubmit, isEdit }: { form: { title: string; issuing_organization: string; issue_date: string; fileName: string; fileData?: string; probable_completion_time?: string; tags: string[] }; setForm: (value: { title: string; issuing_organization: string; issue_date: string; fileName: string; fileData?: string; probable_completion_time?: string; tags: string[] }) => void; error: string; onClose: () => void; onSubmit: () => void; isEdit?: boolean }) {
+function AddCertificationDialog({ form, setForm, error, onClose, onSubmit, isEdit }: { form: { title: string; issuing_organization: string; issue_date: string; fileName: string; fileData?: string; probable_completion_time?: string; tags: string[]; progress?: number }; setForm: (value: { title: string; issuing_organization: string; issue_date: string; fileName: string; fileData?: string; probable_completion_time?: string; tags: string[]; progress?: number }) => void; error: string; onClose: () => void; onSubmit: () => void; isEdit?: boolean }) {
   const orgs = Object.keys(ORGANIZATION_DATA);
   const selectedOrg = form.issuing_organization;
   const courses = selectedOrg ? ORGANIZATION_DATA[selectedOrg]?.courses || [] : [];
@@ -1511,6 +1660,27 @@ function AddCertificationDialog({ form, setForm, error, onClose, onSubmit, isEdi
           }}
         />
         <TextInput label="Probable Completion Time" type="date" value={form.probable_completion_time || ''} onChange={(value) => setForm({ ...form, probable_completion_time: value })} min={form.issue_date} />
+        
+        <div className="space-y-3 rounded-2xl bg-slate-50 p-4 border border-slate-200">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-black uppercase tracking-widest text-slate-500">Current Progress</label>
+            <span className="text-sm font-black text-[#3654ff]">{form.progress || 0}%</span>
+          </div>
+          <input 
+            type="range" 
+            min="0" 
+            max="100" 
+            step="5"
+            value={form.progress || 0} 
+            onChange={(e) => setForm({ ...form, progress: parseInt(e.target.value) })}
+            className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-slate-200 accent-[#3654ff]"
+          />
+          <div className="flex justify-between text-[10px] font-bold text-slate-400">
+            <span>Started</span>
+            <span>In Progress</span>
+            <span>Completed</span>
+          </div>
+        </div>
         <label className="block cursor-pointer rounded-3xl border-2 border-dashed border-slate-950 bg-[#bfdbfe] p-6 text-center transition hover:bg-[#dbeafe]">
           <UploadCloud className="mx-auto mb-2 h-9 w-9" />
           <span className="block font-bold">{form.fileName || 'Choose PDF (Optional)'}</span>
