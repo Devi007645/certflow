@@ -518,9 +518,9 @@ function App() {
         />
       )}
       {viewingCert && (
-        <DocumentViewer 
-          cert={viewingCert} 
-          onClose={() => setViewingCert(null)} 
+        <DocumentViewer
+          cert={viewingCert}
+          onClose={() => setViewingCert(null)}
           allowDownload={activeUser?.role === 'admin' || viewingCert.user_id === activeUser?.id}
           uploaderName={peopleState[viewingCert.user_id]?.name}
         />
@@ -797,14 +797,14 @@ function UserDashboard({ user, certifications, allCertifications, people, onAdd,
         <StatCard icon={<FileText />} label="My submissions" value={certifications.length.toString()} />
         <StatCard icon={<CheckCircle2 />} label="Approved / reviewed" value={certifications.filter((cert) => cert.admin_review).length.toString()} />
         <StatCard icon={<CalendarDays />} label="Newest upload" value={certifications[0]?.created_at ? certifications[0].created_at.slice(0, 10) : 'None'} />
-        <StatCard 
-          icon={<RefreshCw />} 
-          label="Next Completion" 
+        <StatCard
+          icon={<RefreshCw />}
+          label="Next Completion"
           value={
             certifications
               .filter(c => c.probable_completion_time && !c.admin_review)
               .sort((a, b) => (a.probable_completion_time || '').localeCompare(b.probable_completion_time || ''))[0]?.probable_completion_time || 'None'
-          } 
+          }
         />
       </div>
       <div className={`${isRefreshing ? 'opacity-50 pointer-events-none' : ''} transition-opacity`}>
@@ -896,10 +896,10 @@ function AdminDashboard({ admin, certifications, people, query, setQuery, review
         <StatCard icon={<FolderOpen />} label="Visible records" value={certifications.length.toString()} />
         <StatCard icon={<MessageSquareText />} label="Reviews written" value={reviewedCount.toString()} />
         <StatCard icon={<UsersRound />} label="Total Users" value={Object.values(people).filter(p => p.role === 'user').length.toString()} />
-        <StatCard 
-          icon={<Bell />} 
-          label="Pending completions" 
-          value={certifications.filter(c => c.probable_completion_time && !c.admin_review).length.toString()} 
+        <StatCard
+          icon={<Bell />}
+          label="Pending completions"
+          value={certifications.filter(c => c.probable_completion_time && !c.admin_review).length.toString()}
         />
       </div>
       <div className="mt-8 rounded-[2rem] border border-[#3654ff]/40 bg-white p-6 shadow-sm">
@@ -1179,8 +1179,8 @@ function StatusPill({ reviewed, delayed }: { reviewed: boolean; delayed?: boolea
   }
   return (
     <span className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-bold ${reviewed
-        ? 'bg-green-100 text-green-700 border border-green-200'
-        : 'bg-yellow-100 text-yellow-700 border border-yellow-200'
+      ? 'bg-green-100 text-green-700 border border-green-200'
+      : 'bg-yellow-100 text-yellow-700 border border-yellow-200'
       }`}>
       {reviewed ? 'Reviewed' : 'Pending'}
     </span>
@@ -1193,8 +1193,12 @@ const ORGANIZATION_DATA: Record<string, { courses: string[]; bestFor: string }> 
       "Claude 101",
       "Claude Code 101",
       "Claude Code in Action",
+      "Introductions to Agent Skills",
+      "Introductions to Subagents",
+      "AI Capability and limitations",
+      "AI Fluency: Framework and Foundation",
       "Building with the Claude API",
-      "Model Context Protocol (MCP) Fundamentals",
+      "Introduction to Model Context Protocol (MCP)",
       "Model Context Protocol: Advanced Topics",
       "AI Fluency for Students",
       "AI Fluency for Educators"
@@ -1633,7 +1637,7 @@ function DocumentViewer({ cert, onClose, allowDownload, uploaderName }: { cert: 
               </p>
             </div>
             {allowDownload && cert.file_url && (
-              <button 
+              <button
                 onClick={handleDownload}
                 className="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-200 transition"
                 title="Download document"
@@ -1648,10 +1652,10 @@ function DocumentViewer({ cert, onClose, allowDownload, uploaderName }: { cert: 
           {cert.file_url.startsWith('data:image/') ? (
             <img src={cert.file_url} alt={cert.title} className="w-full h-full object-contain" />
           ) : cert.file_url.startsWith('data:application/pdf') ? (
-            <iframe 
-              src={allowDownload ? cert.file_url : `${cert.file_url}#toolbar=0&navpanes=0&scrollbar=0`} 
-              title={cert.title} 
-              className="w-full h-full" 
+            <iframe
+              src={allowDownload ? cert.file_url : `${cert.file_url}#toolbar=0&navpanes=0&scrollbar=0`}
+              title={cert.title}
+              className="w-full h-full"
             />
           ) : (
             <div className="flex items-center justify-center h-full text-slate-500">
