@@ -9,7 +9,6 @@ interface FormState {
   fileData?: string;
   probable_completion_time?: string;
   tags: string[];
-  progress: number;
 }
 
 interface StoreState {
@@ -31,7 +30,6 @@ const initialFormState: FormState = {
   fileData: '',
   probable_completion_time: '',
   tags: [],
-  progress: 0,
 };
 
 export const useFormStore = create<StoreState>()(

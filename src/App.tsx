@@ -74,7 +74,6 @@ type Certification = {
   notes?: string
   emoji?: string
   tags?: string[]
-  progress?: number
 }
 
 const formatDate = (dateStr: string | undefined) => {
@@ -108,8 +107,7 @@ const certSchema = z.object({
   issue_date: z.string().min(1, 'Issue date is required'),
   fileName: z.string().optional(),
   probable_completion_time: z.string().optional(),
-  progress: z.number().min(0).max(100).optional(),
-})
+  })
 
 function App() {
   const { screen, setScreen, activeUser, setActiveUser, logout } = useAuthStore()
@@ -198,8 +196,7 @@ function App() {
       fileData: cert.file_url || '',
       probable_completion_time: cert.probable_completion_time || '',
       tags: cert.tags || [],
-      progress: cert.progress || 0,
-    })
+          })
     setIsModalOpen(true)
   }
 
@@ -353,8 +350,7 @@ function App() {
       fileName: form.fileName,
       probable_completion_time: form.probable_completion_time,
       tags: form.tags,
-      progress: form.progress || 0,
-    }
+          }
 
     try {
       if (editingCert) {
@@ -1434,7 +1430,7 @@ const findBestMatch = (source: string, targets: string[]) => {
   return best;
 };
 
-function AddCertificationDialog({ form, setForm, error, onClose, onSubmit, isEdit }: { form: { title: string; issuing_organization: string; issue_date: string; fileName: string; fileData?: string; probable_completion_time?: string; tags: string[]; progress?: number }; setForm: (value: { title: string; issuing_organization: string; issue_date: string; fileName: string; fileData?: string; probable_completion_time?: string; tags: string[]; progress?: number }) => void; error: string; onClose: () => void; onSubmit: () => void; isEdit?: boolean }) {
+function AddCertificationDialog({ form, setForm, error, onClose, onSubmit, isEdit }: { form: { title: string; issuing_organization: string; issue_date: string; fileName: string; fileData?: string; probable_completion_time?: string; tags: string[] }; setForm: (value: { title: string; issuing_organization: string; issue_date: string; fileName: string; fileData?: string; probable_completion_time?: string; tags: string[] }) => void; error: string; onClose: () => void; onSubmit: () => void; isEdit?: boolean }) {
   const orgs = Object.keys(ORGANIZATION_DATA);
   const selectedOrg = form.issuing_organization;
   const courses = selectedOrg ? ORGANIZATION_DATA[selectedOrg]?.courses || [] : [];
@@ -1556,26 +1552,6 @@ function AddCertificationDialog({ form, setForm, error, onClose, onSubmit, isEdi
         />
         <TextInput label="Probable Completion Time" type="date" value={form.probable_completion_time || ''} onChange={(value) => setForm({ ...form, probable_completion_time: value })} min={form.issue_date} />
 
-        <div className="space-y-3 rounded-2xl bg-slate-50 p-4 border border-slate-200">
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-black uppercase tracking-widest text-slate-500">Current Progress</label>
-            <span className="text-sm font-black text-[#3654ff]">{form.progress || 0}%</span>
-          </div>
-          <input
-            type="range"
-            min="0"
-            max="100"
-            step="5"
-            value={form.progress || 0}
-            onChange={(e) => setForm({ ...form, progress: parseInt(e.target.value) })}
-            className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-slate-200 accent-[#3654ff]"
-          />
-          <div className="flex justify-between text-[10px] font-bold text-slate-400">
-            <span>Started</span>
-            <span>In Progress</span>
-            <span>Completed</span>
-          </div>
-        </div>
         <label className="block cursor-pointer rounded-3xl border-2 border-dashed border-slate-950 bg-[#bfdbfe] p-6 text-center transition hover:bg-[#dbeafe]">
           <UploadCloud className="mx-auto mb-2 h-9 w-9" />
           <span className="block font-bold">{form.fileName || 'Choose PDF (Optional)'}</span>
