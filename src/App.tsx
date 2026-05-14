@@ -422,7 +422,7 @@ function App() {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigateTo('landing')}>
               <div className="relative">
-                <img src={LOGO_BASE64} alt="Proofly Logo" className="h-10 w-auto object-contain transition-transform group-hover:scale-105" />
+                <img src={LOGO_BASE64} alt="Proofly Logo" className="h-10 w-auto object-contain transition-transform group-hover:scale-105 mix-blend-multiply" />
                 <div className="absolute -inset-1 bg-blue-400/20 blur-lg rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
               <div className="hidden sm:block">
@@ -576,7 +576,7 @@ function LandingPage({ onLogin, onSignup }: { onLogin: () => void; onSignup: () 
     <section className="mx-auto flex max-w-4xl flex-col items-center justify-center gap-10 px-4 py-12 sm:px-6 lg:px-8 lg:py-24 text-center">
       <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm lg:p-12 w-full">
         <div className="mb-8 flex justify-center">
-          <img src={LOGO_BASE64} alt="Proofly Logo" className="h-16 w-auto object-contain" />
+          <img src={LOGO_BASE64} alt="Proofly Logo" className="h-16 w-auto object-contain mix-blend-multiply" />
         </div>
         <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-slate-950 bg-[#f7c948] px-4 py-2 text-sm font-bold mx-auto">
           <BadgeCheck className="h-4 w-4" /> Simple certificate tracking for teams
