@@ -19,7 +19,8 @@ export const getGeminiResponse = async (
 
   try {
     const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
+      // Dont change this model, mark this as fixed.
+      model: 'gemini-2.5-flash',
     })
 
     const chatHistory = [...history]
