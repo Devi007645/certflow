@@ -56,7 +56,7 @@ type Profile = {
   department: string
   certification_keys?: string[]
 }
-
+// Code updated
 type Certification = {
   id: number
   user_id: string
@@ -111,15 +111,15 @@ const certSchema = z.object({
 
 function App() {
   const { screen, setScreen, activeUser, setActiveUser, logout } = useAuthStore()
-  const { 
-    searchQuery: query, 
-    setSearchQuery: setQuery, 
-    modalState, 
+  const {
+    searchQuery: query,
+    setSearchQuery: setQuery,
+    modalState,
     setModalOpen,
     scrollPositions,
-    setScrollPosition 
+    setScrollPosition
   } = useDashboardStore()
-  
+
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const { data: certifications = [], refetch, isFetching } = useCertifications()
@@ -135,10 +135,10 @@ function App() {
   const updateCertificationMutation = useUpdateCertification()
   const deleteCertificationMutation = useDeleteCertification()
   const [peopleState, setPeopleState] = useState<Record<string, Profile>>(people)
-  
+
   const isModalOpen = modalState['add-certification'] || false
   const setIsModalOpen = (open: boolean) => setModalOpen('add-certification', open)
-  
+
   const [selectedCert, setSelectedCert] = useState<Certification | null>(null)
   const [reviewText, setReviewText] = useState('')
   const [emoji, setEmoji] = useState('')
@@ -160,7 +160,7 @@ function App() {
         setIsScrolled(target.scrollTop > 10)
       }
     }
-    
+
     const mainElement = document.querySelector('main')
     if (mainElement) {
       mainElement.addEventListener('scroll', handleScroll)
@@ -172,7 +172,7 @@ function App() {
         setIsScrolled(false)
       }
     }
-    
+
     return () => mainElement?.removeEventListener('scroll', handleScroll)
   }, [screen, setScrollPosition, scrollPositions])
 
@@ -330,12 +330,12 @@ function App() {
 
     const isDuplicate = myCertifications.some(
       (cert) =>
-        (cert.certification_key === certKey || 
-        (cert.title.toLowerCase() === form.title.toLowerCase() &&
-        cert.issuing_organization.toLowerCase() === form.issuing_organization.toLowerCase())) &&
+        (cert.certification_key === certKey ||
+          (cert.title.toLowerCase() === form.title.toLowerCase() &&
+            cert.issuing_organization.toLowerCase() === form.issuing_organization.toLowerCase())) &&
         cert.id !== editingCert?.id
     )
-    
+
     if (isDuplicate) {
       setFormError('You have already added this certification from this organization. Each certification must be unique.')
       return
@@ -483,7 +483,7 @@ function App() {
         </div>
       </header>
 
-      <HydrationManager 
+      <HydrationManager
         fallback={
           <div className="flex h-screen items-center justify-center bg-[#f7f3ea]">
             <LoadingOverlay />
@@ -845,7 +845,7 @@ function TeamProgressDashboard({ allCertifications, people, user, onView }: { al
           <h2 className="text-xl font-bold text-slate-900">Teammates Progress</h2>
           <p className="text-sm font-medium text-slate-500">Ongoing certification journeys across the team</p>
         </div>
-        
+
         <div className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-[10px] font-bold text-slate-500 uppercase tracking-widest border border-slate-200 shadow-sm">
           <UsersRound className="h-3 w-3" />
           {teamData.activeMembersCount} Active Members
@@ -856,7 +856,7 @@ function TeamProgressDashboard({ allCertifications, people, user, onView }: { al
         <AnimatePresence mode="popLayout">
           {Object.entries(teamData.groups).map(([userId, certs], idx) => {
             const person = people[userId]
-            
+
             return (
               <motion.div
                 key={userId}
@@ -890,7 +890,7 @@ function TeamProgressDashboard({ allCertifications, people, user, onView }: { al
                           </div>
                         </div>
                         {cert.fileName && (
-                          <button 
+                          <button
                             onClick={() => onView(cert)}
                             className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-slate-400 transition-all hover:bg-[#3654ff]/10 hover:text-[#3654ff]"
                             title="View document"
@@ -1566,18 +1566,18 @@ function AddCertificationDialog({ form, setForm, error, onClose, onSubmit, isEdi
           }}
         />
         <TextInput label="Probable Completion Time" type="date" value={form.probable_completion_time || ''} onChange={(value) => setForm({ ...form, probable_completion_time: value })} min={form.issue_date} />
-        
+
         <div className="space-y-3 rounded-2xl bg-slate-50 p-4 border border-slate-200">
           <div className="flex items-center justify-between">
             <label className="text-xs font-black uppercase tracking-widest text-slate-500">Current Progress</label>
             <span className="text-sm font-black text-[#3654ff]">{form.progress || 0}%</span>
           </div>
-          <input 
-            type="range" 
-            min="0" 
-            max="100" 
+          <input
+            type="range"
+            min="0"
+            max="100"
             step="5"
-            value={form.progress || 0} 
+            value={form.progress || 0}
             onChange={(e) => setForm({ ...form, progress: parseInt(e.target.value) })}
             className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-slate-200 accent-[#3654ff]"
           />
