@@ -119,8 +119,8 @@ function App() {
   } = useDashboardStore()
   
   const [isTransitioning, setIsTransitioning] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
   const { data: certifications = [], refetch, isFetching } = useCertifications()
-  const { isOnline } = useOfflineSync()
 
   const navigateTo = (targetScreen: Screen) => {
     setIsTransitioning(true)
@@ -155,6 +155,7 @@ function App() {
       const target = e.target as HTMLElement
       if (target && target.scrollTop !== undefined) {
         setScrollPosition(screen, target.scrollTop)
+        setIsScrolled(target.scrollTop > 10)
       }
     }
     
@@ -164,6 +165,9 @@ function App() {
       // Restore scroll
       if (scrollPositions[screen]) {
         mainElement.scrollTop = scrollPositions[screen]
+        setIsScrolled(mainElement.scrollTop > 10)
+      } else {
+        setIsScrolled(false)
       }
     }
     
@@ -402,8 +406,8 @@ function App() {
         <div className="absolute top-1/4 left-1/3 h-64 w-64 rounded-full bg-[#a855f7]/25 blur-3xl" />
       </div>
 
-      <header className="sticky top-0 z-40 border-b border-slate-900/10 bg-[#f7f3ea]/85 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+      <header className={`sticky top-0 z-40 border-b border-slate-900/10 transition-all duration-300 ${isScrolled ? 'bg-[#f7f3ea]/70 backdrop-blur-md' : 'bg-[#f7f3ea]'}`}>
+        <div className={`mx-auto flex max-w-7xl items-center justify-between px-4 transition-all duration-300 ${isScrolled ? 'py-3' : 'py-4'} sm:px-6 lg:px-8`}>
           <div className="flex items-center gap-4">
             <svg width="64" height="64" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
               <defs>
@@ -431,16 +435,6 @@ function App() {
 
             {/* Status Indicators */}
             <div className="ml-4 flex items-center gap-2 text-xs font-bold">
-              {!isOnline && (
-                <span className="rounded-full bg-red-100 px-2 py-1 text-red-700 border border-red-300 flex items-center gap-1">
-                  <EyeOff className="h-3 w-3" /> Offline
-                </span>
-              )}
-              {isOnline && (
-                <span className="rounded-full bg-green-100 px-2 py-1 text-green-700 border border-green-300 flex items-center gap-1">
-                  <ShieldCheck className="h-3 w-3" /> Online
-                </span>
-              )}
               {saveStatus === 'saving' && (
                 <span className="rounded-full bg-yellow-100 px-2 py-1 text-yellow-700 border border-yellow-300 flex items-center gap-1">
                   <UploadCloud className="h-3 w-3 animate-pulse" /> Saving...
