@@ -842,12 +842,18 @@ function UserDashboard({ user, certifications, allCertifications, people, onAdd,
         <CertificationGrid certifications={certifications} onView={onView} onUpload={onUpload} onRemove={onRemove} onEdit={onEdit} onDelete={onDelete} />
       </div>
 
-      <div className="mt-12 rounded-[2rem] border border-[#3654ff]/40 bg-white p-6 shadow-sm">
-        <div className="mb-5">
-          <h2 className="text-lg font-bold">Team Progress</h2>
-          <p className="text-sm font-medium text-slate-500">View what other employees are working on.</p>
+      <div className="mt-12 rounded-[2rem] border border-[#3654ff]/30 bg-white/80 backdrop-blur-sm p-6 shadow-sm">
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-slate-900">Team Progress</h2>
+            <p className="text-sm font-medium text-slate-500">Live view of ongoing peer certifications</p>
+          </div>
+          <div className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+            <UsersRound className="h-3 w-3" />
+            {Object.keys(allCertifications.reduce((acc, c) => ({...acc, [c.user_id]: true}), {})).length - 1} active members
+          </div>
         </div>
-        <div className="grid gap-6">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Object.entries(
             allCertifications.reduce((groups, cert) => {
               if (cert.user_id !== user.id) {
@@ -859,33 +865,31 @@ function UserDashboard({ user, certifications, allCertifications, people, onAdd,
           ).map(([userId, certs]) => {
             const person = people[userId]
             return (
-              <div key={userId} className="rounded-3xl border-2 border-slate-200 bg-[#f8fafc] p-5">
-                <div className="flex gap-3 mb-4 items-center">
-                  <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-slate-950 text-white font-bold text-xl">{person?.name?.[0]?.toUpperCase() || '?'}</div>
-                  <div>
-                    <p className="font-bold text-lg">{person?.name || 'Unknown User'}</p>
-                    <p className="text-sm text-slate-500">{person?.department}</p>
+              <div key={userId} className="flex flex-col rounded-2xl border border-slate-100 bg-[#f8fafc]/50 p-4 transition-all hover:border-[#3654ff]/20 hover:shadow-md">
+                <div className="mb-3 flex items-center gap-3">
+                  <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-slate-900 text-white font-bold text-sm shadow-sm">{person?.name?.[0]?.toUpperCase() || '?'}</div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-bold text-slate-900">{person?.name || 'Unknown User'}</p>
+                    <p className="truncate text-[10px] font-medium text-slate-500">{person?.department}</p>
                   </div>
-                  <span className="ml-auto rounded-full bg-[#3654ff]/10 px-3 py-1 text-xs font-bold text-[#3654ff] border border-[#3654ff]/20">
-                    {certs.length} {certs.length === 1 ? 'Entry' : 'Entries'}
-                  </span>
                 </div>
-                <div className="grid gap-3">
+                <div className="flex-1 space-y-2">
                   {certs.map((cert) => (
-                    <article key={cert.id} className="grid gap-4 rounded-2xl border border-[#3654ff]/20 bg-white p-4 lg:grid-cols-[1.2fr_1fr_auto] lg:items-center">
-                      <div>
-                        <p className="font-bold">{cert.title}</p>
-                        <p className="text-sm text-slate-500">{cert.issuing_organization} · Completion: {formatDate(cert.probable_completion_time)}</p>
+                    <div key={cert.id} className="group flex items-center justify-between gap-2 rounded-xl bg-white p-2.5 shadow-sm border border-slate-100 transition-colors hover:bg-slate-50">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-xs font-bold text-slate-800" title={cert.title}>{cert.title}</p>
+                        <p className="text-[10px] font-medium text-slate-400">Ends: {formatDate(cert.probable_completion_time)}</p>
                       </div>
-                      <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-                        <StatusPill reviewed={Boolean(cert.admin_review)} delayed={cert.probable_completion_time ? new Date().toISOString().slice(0, 10) > cert.probable_completion_time : false} />
-                        {cert.fileName && (
-                          <button onClick={() => onView(cert)} className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-2 text-sm font-bold text-slate-700 border border-slate-200" title="View document">
-                            <Eye className="h-4 w-4" /> View
-                          </button>
-                        )}
-                      </div>
-                    </article>
+                      {cert.fileName && (
+                        <button 
+                          onClick={() => onView(cert)} 
+                          className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-[#3654ff] transition-colors hover:bg-blue-100" 
+                          title="View attachment"
+                        >
+                          <FileText className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
                   ))}
                 </div>
               </div>
