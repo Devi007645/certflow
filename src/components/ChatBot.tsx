@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { MessageSquare, X, Send, Bot, User, Sparkles, Loader2, Minimize2, Maximize2 } from 'lucide-react'
-import { getGeminiResponse, ChatMessage } from '../lib/gemini'
+import { getGeminiStreamResponse, ChatMessage } from '../lib/gemini'
 
 interface Profile {
   id: string
@@ -34,7 +34,9 @@ const ChatBot: React.FC<ChatBotProps> = ({ activeUser, certifications, people })
   const [messages, setMessages] = useState<{ role: 'user' | 'model'; text: string }[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [streamingText, setStreamingText] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
+  const dragControls = useRef<any>(null)
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -93,11 +95,13 @@ const ChatBot: React.FC<ChatBotProps> = ({ activeUser, certifications, people })
       - EMPLOYEE: Help them track their own progress and see what teammates are working on.
 
       STRICT RULES:
-      1. Responses MUST be 2-3 lines max.
-      2. If asked where to see teammates' certifications, tell them: "It's listed at the end of the dashboard page."
-      3. For questions about "progress", refer to the "YOUR PROGRESS" data above.
-      4. Never reveal admin certifications to non-admin users.
-      5. Use the data below as your absolute source of truth.
+      1. Responses MUST be concise but informative.
+      2. USE BOLDING (e.g. **important term**) for key information to make it readable at a glance.
+      3. Be creative and professional. Use emojis sparingly but effectively.
+      4. If asked where to see teammates' certifications, tell them: "It's listed at the end of the dashboard page."
+      5. For questions about "progress", refer to the "YOUR PROGRESS" data above.
+      6. Never reveal admin certifications to non-admin users.
+      7. Use the data below as your absolute source of truth.
 
       WORKSPACE DATA:
       - Total Records: ${certsData.length}
@@ -113,6 +117,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ activeUser, certifications, people })
     setInput('')
     setMessages(prev => [...prev, { role: 'user', text: userMessage }])
     setIsLoading(true)
+    setStreamingText('')
 
     const history: ChatMessage[] = messages.map(m => ({
       role: m.role,
@@ -120,19 +125,47 @@ const ChatBot: React.FC<ChatBotProps> = ({ activeUser, certifications, people })
     }))
 
     const context = generateContext()
-    const response = await getGeminiResponse(userMessage, history, context)
+    let fullResponse = ''
+    
+    await getGeminiStreamResponse(
+      userMessage, 
+      history, 
+      context, 
+      (chunk) => {
+        fullResponse = chunk
+        setStreamingText(chunk)
+      }
+    )
 
-    setMessages(prev => [...prev, { role: 'model', text: response }])
+    setMessages(prev => [...prev, { role: 'model', text: fullResponse || 'No response received' }])
+    setStreamingText('')
     setIsLoading(false)
   }
+
+  // Simple markdown-like renderer for bold text
+  const MessageContent = ({ text }: { text: string }) => {
+    const parts = text.split(/(\*\*.*?\*\*)/g);
+    return (
+      <>
+        {parts.map((part, i) => {
+          if (part.startsWith('**') && part.endsWith('**')) {
+            return <strong key={i} className="font-extrabold text-blue-600">{part.slice(2, -2)}</strong>;
+          }
+          return <span key={i}>{part}</span>;
+        })}
+      </>
+    );
+  };
 
   if (!activeUser) return null
 
   return (
-    <div className="fixed bottom-6 right-6 z-[100] flex flex-col items-end">
+    <div className="fixed bottom-6 right-6 z-[100] flex flex-col items-end pointer-events-none">
       <AnimatePresence>
         {isOpen && (
           <motion.div
+            drag
+            dragMomentum={false}
             layout
             initial={{ opacity: 0, y: 50, scale: 0.9, filter: 'blur(10px)' }}
             animate={{ 
@@ -145,10 +178,10 @@ const ChatBot: React.FC<ChatBotProps> = ({ activeUser, certifications, people })
             }}
             exit={{ opacity: 0, y: 50, scale: 0.9, filter: 'blur(10px)' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="mb-4 overflow-hidden rounded-[2.5rem] border border-white/40 bg-white/70 shadow-[0_20px_50px_rgba(0,0,0,0.15)] backdrop-blur-3xl"
+            className="mb-4 overflow-hidden rounded-[2.5rem] border border-white/40 bg-white/70 shadow-[0_20px_50px_rgba(0,0,0,0.15)] backdrop-blur-3xl pointer-events-auto cursor-default"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between bg-gradient-to-r from-[#3654ff] to-[#7c3aed] p-5 text-white shadow-lg">
+            {/* Header - Drag Handle */}
+            <div className="flex items-center justify-between bg-gradient-to-r from-[#3654ff] to-[#7c3aed] p-5 text-white shadow-lg cursor-move select-none">
               <div className="flex items-center gap-3">
                 <div className="relative">
                   <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-md shadow-inner">
@@ -252,7 +285,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ activeUser, certifications, people })
                             ? 'bg-[#3654ff] text-white rounded-tr-none' 
                             : 'bg-white text-slate-700 border border-slate-100 rounded-tl-none'
                         }`}>
-                          {m.text}
+                          <MessageContent text={m.text} />
                           {m.role === 'model' && (
                             <div className="absolute -left-1 top-2 h-2 w-2 rotate-45 border-l border-t border-slate-100 bg-white" />
                           )}
@@ -260,7 +293,24 @@ const ChatBot: React.FC<ChatBotProps> = ({ activeUser, certifications, people })
                       </div>
                     </motion.div>
                   ))}
-                  {isLoading && (
+                  {streamingText && (
+                    <motion.div 
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="flex justify-start"
+                    >
+                      <div className="flex gap-3 max-w-[85%]">
+                        <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#3654ff] to-[#7c3aed] text-white shadow-md">
+                          <Bot className="h-4 w-4" />
+                        </div>
+                        <div className="bg-white text-slate-700 border border-slate-100 rounded-[1.5rem] rounded-tl-none px-4 py-3 text-sm font-medium shadow-sm">
+                          <MessageContent text={streamingText} />
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {isLoading && !streamingText && (
                     <motion.div 
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
@@ -276,7 +326,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ activeUser, certifications, people })
                             <motion.div animate={{ scale: [1, 1.5, 1] }} transition={{ repeat: Infinity, duration: 1, delay: 0.2 }} className="h-1.5 w-1.5 rounded-full bg-indigo-400" />
                             <motion.div animate={{ scale: [1, 1.5, 1] }} transition={{ repeat: Infinity, duration: 1, delay: 0.4 }} className="h-1.5 w-1.5 rounded-full bg-purple-400" />
                           </div>
-                          <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Processing</span>
+                          <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Thinking</span>
                         </div>
                       </div>
                     </motion.div>
@@ -326,7 +376,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ activeUser, certifications, people })
           setIsOpen(true)
           setIsMinimized(false)
         }}
-        className={`group relative flex h-16 w-16 items-center justify-center rounded-[1.8rem] bg-gradient-to-br from-[#3654ff] via-[#5d75ff] to-[#7c3aed] text-white shadow-[0_10px_30px_rgba(54,84,255,0.3)] transition-all duration-500 ${
+        className={`group relative flex h-16 w-16 items-center justify-center rounded-[1.8rem] bg-gradient-to-br from-[#3654ff] via-[#5d75ff] to-[#7c3aed] text-white shadow-[0_10px_30px_rgba(54,84,255,0.3)] transition-all duration-500 pointer-events-auto ${
           isOpen ? 'opacity-0 scale-0 rotate-90' : 'opacity-100 scale-100 rotate-0'
         }`}
       >

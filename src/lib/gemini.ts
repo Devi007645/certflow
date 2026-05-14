@@ -8,19 +8,20 @@ export interface ChatMessage {
   parts: { text: string }[]
 }
 
-export const getGeminiResponse = async (
+export const getGeminiStreamResponse = async (
   prompt: string,
   history: ChatMessage[] = [],
-  context: string = ''
+  context: string = '',
+  onChunk: (text: string) => void
 ) => {
   if (!API_KEY) {
-    return "Gemini API Key is missing. Please add VITE_GEMINI_API_KEY to your environment variables."
+    onChunk("Gemini API Key is missing. Please add VITE_GEMINI_API_KEY to your environment variables.")
+    return
   }
 
   try {
     const model = genAI.getGenerativeModel({
-      // Dont change this model, mark this as fixed.
-      model: 'gemini-3.1-flash-lite',
+      model: 'gemini-1.5-flash', // Flash is faster for streaming
       systemInstruction: context,
     })
 
@@ -28,12 +29,16 @@ export const getGeminiResponse = async (
       history: history,
     })
 
-
-    const result = await chat.sendMessage(prompt)
-    const response = await result.response
-    return response.text()
+    const result = await chat.sendMessageStream(prompt)
+    let fullText = ''
+    for await (const chunk of result.stream) {
+      const chunkText = chunk.text()
+      fullText += chunkText
+      onChunk(fullText)
+    }
   } catch (error: any) {
     console.error('Gemini Error:', error)
-    return `Error: ${error.message || 'Failed to get response from AI'}`
+    onChunk(`Error: ${error.message || 'Failed to get response from AI'}`)
   }
 }
+
