@@ -58,8 +58,19 @@ type Certification = {
   created_at: string
   probable_completion_time?: string
   notes?: string
-  tags?: string[]
   emoji?: string
+  tags?: string[]
+}
+
+const formatDate = (dateStr: string | undefined) => {
+  if (!dateStr) return 'N/A';
+  try {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  } catch (e) {
+    return dateStr;
+  }
 }
 
 const adminUser: Profile = {
@@ -505,7 +516,11 @@ function App() {
         />
       )}
       {viewingCert && (
-        <DocumentViewer cert={viewingCert} onClose={() => setViewingCert(null)} />
+        <DocumentViewer 
+          cert={viewingCert} 
+          onClose={() => setViewingCert(null)} 
+          allowDownload={activeUser?.role === 'admin' || viewingCert.user_id === activeUser?.id}
+        />
       )}
       {isTransitioning && <LoadingOverlay />}
     </main>
@@ -773,10 +788,19 @@ function UserDashboard({ user, certifications, allCertifications, people, onAdd,
           </div>
         }
       />
-      <div className="mt-8 grid gap-4 md:grid-cols-3">
+      <div className="mt-8 grid gap-4 md:grid-cols-4">
         <StatCard icon={<FileText />} label="My submissions" value={certifications.length.toString()} />
         <StatCard icon={<CheckCircle2 />} label="Approved / reviewed" value={certifications.filter((cert) => cert.admin_review).length.toString()} />
         <StatCard icon={<CalendarDays />} label="Newest upload" value={certifications[0]?.created_at ? certifications[0].created_at.slice(0, 10) : 'None'} />
+        <StatCard 
+          icon={<RefreshCw />} 
+          label="Next Completion" 
+          value={
+            certifications
+              .filter(c => c.probable_completion_time && !c.admin_review)
+              .sort((a, b) => (a.probable_completion_time || '').localeCompare(b.probable_completion_time || ''))[0]?.probable_completion_time || 'None'
+          } 
+        />
       </div>
       <div className={`${isRefreshing ? 'opacity-50 pointer-events-none' : ''} transition-opacity`}>
         <CertificationGrid certifications={certifications} onView={onView} onUpload={onUpload} onRemove={onRemove} onEdit={onEdit} onDelete={onDelete} />
@@ -815,7 +839,7 @@ function UserDashboard({ user, certifications, allCertifications, people, onAdd,
                     <article key={cert.id} className="grid gap-4 rounded-2xl border border-[#3654ff]/20 bg-white p-4 lg:grid-cols-[1.2fr_1fr_auto] lg:items-center">
                       <div>
                         <p className="font-bold">{cert.title}</p>
-                        <p className="text-sm text-slate-500">{cert.issuing_organization} · Start {cert.issue_date}</p>
+                        <p className="text-sm text-slate-500">{cert.issuing_organization} · Completion: {formatDate(cert.probable_completion_time)}</p>
                       </div>
                       <div className="flex flex-wrap items-center gap-2 lg:justify-end">
                         <StatusPill reviewed={Boolean(cert.admin_review)} delayed={cert.probable_completion_time ? new Date().toISOString().slice(0, 10) > cert.probable_completion_time : false} />
@@ -863,10 +887,15 @@ function AdminDashboard({ admin, certifications, people, query, setQuery, review
           </div>
         }
       />
-      <div className="mt-8 grid gap-4 md:grid-cols-3">
+      <div className="mt-8 grid gap-4 md:grid-cols-4">
         <StatCard icon={<FolderOpen />} label="Visible records" value={certifications.length.toString()} />
         <StatCard icon={<MessageSquareText />} label="Reviews written" value={reviewedCount.toString()} />
         <StatCard icon={<UsersRound />} label="Total Users" value={Object.values(people).filter(p => p.role === 'user').length.toString()} />
+        <StatCard 
+          icon={<Bell />} 
+          label="Pending completions" 
+          value={certifications.filter(c => c.probable_completion_time && !c.admin_review).length.toString()} 
+        />
       </div>
       <div className="mt-8 rounded-[2rem] border border-[#3654ff]/40 bg-white p-6 shadow-sm">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -899,7 +928,7 @@ function AdminDashboard({ admin, certifications, people, query, setQuery, review
                     <article key={cert.id} className="grid gap-4 rounded-2xl border border-[#3654ff]/20 bg-white p-4 lg:grid-cols-[1.2fr_1fr_auto] lg:items-center">
                       <div>
                         <p className="font-bold">{cert.title}</p>
-                        <p className="text-sm text-slate-500">{cert.issuing_organization} · Start {cert.issue_date}</p>
+                        <p className="text-sm text-slate-500">{cert.issuing_organization} · Completion: {formatDate(cert.probable_completion_time)}</p>
                         {cert.tags && cert.tags.length > 0 && (
                           <div className="mt-1 flex flex-wrap gap-1">
                             {cert.tags.map((tag) => (
@@ -963,15 +992,6 @@ function StatCard({ icon, label, value }: { icon: ReactNode; label: string; valu
 }
 
 function CertificationGrid({ certifications, onView, onUpload, onRemove, onEdit, onDelete }: { certifications: Certification[]; onView: (cert: Certification) => void; onUpload: (certId: number, fileName: string, fileData: string) => void; onRemove: (certId: number) => void; onEdit: (cert: Certification) => void; onDelete: (id: number) => void }) {
-  const formatDate = (dateStr: string) => {
-    if (!dateStr) return '';
-    try {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-    } catch (e) {
-      return dateStr;
-    }
-  }
 
   const groupedByOrg = useMemo(() => {
     const groups: Record<string, Certification[]> = {}
@@ -1080,8 +1100,8 @@ function CertificationGrid({ certifications, onView, onUpload, onRemove, onEdit,
                           <CalendarDays className="h-4 w-4" />
                         </div>
                         <div>
-                          <p className="text-xs font-bold text-slate-400">Submitted</p>
-                          <p className="text-sm font-bold text-slate-700">{formatDate(cert.created_at ? cert.created_at.slice(0, 10) : '')}</p>
+                          <p className="text-xs font-bold text-slate-400">Probable Completion</p>
+                          <p className="text-sm font-bold text-slate-700">{formatDate(cert.probable_completion_time)}</p>
                         </div>
                       </div>
                     </div>
@@ -1585,19 +1605,49 @@ function Modal({ title, icon, children, onClose }: { title: string; icon: ReactN
   )
 }
 
-function DocumentViewer({ cert, onClose }: { cert: Certification; onClose: () => void }) {
+function DocumentViewer({ cert, onClose, allowDownload }: { cert: Certification; onClose: () => void; allowDownload?: boolean }) {
+  const handleDownload = () => {
+    if (!allowDownload) return;
+    const link = document.createElement('a');
+    link.href = cert.file_url;
+    link.download = cert.fileName || 'document.pdf';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/70 p-4 backdrop-blur-sm">
       <div className="relative w-full max-w-4xl h-[80vh] rounded-[2rem] border border-slate-200 bg-white p-6 shadow-lg flex flex-col">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-2xl font-bold">{cert.title}</h2>
+          <div className="flex items-center gap-4">
+            <h2 className="text-2xl font-bold">{cert.title}</h2>
+            {allowDownload && cert.file_url && (
+              <button 
+                onClick={handleDownload}
+                className="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-200 transition"
+                title="Download document"
+              >
+                <Download className="h-4 w-4" /> Download
+              </button>
+            )}
+          </div>
           <button onClick={onClose} className="rounded-full bg-white p-2 text-slate-700 hover:bg-slate-950 hover:text-white"><X /></button>
         </div>
-        <div className="flex-1 bg-white rounded-2xl overflow-hidden border-2 border-slate-200">
+        <div className="flex-1 bg-white rounded-2xl overflow-hidden border-2 border-slate-200 relative">
+          {!allowDownload && (
+            <div className="absolute inset-0 z-10 pointer-events-none select-none flex items-center justify-center">
+              <div className="bg-white/10 backdrop-blur-[1px] w-full h-full"></div>
+            </div>
+          )}
           {cert.file_url.startsWith('data:image/') ? (
             <img src={cert.file_url} alt={cert.title} className="w-full h-full object-contain" />
           ) : cert.file_url.startsWith('data:application/pdf') ? (
-            <iframe src={cert.file_url} title={cert.title} className="w-full h-full" />
+            <iframe 
+              src={allowDownload ? cert.file_url : `${cert.file_url}#toolbar=0&navpanes=0&scrollbar=0`} 
+              title={cert.title} 
+              className="w-full h-full" 
+            />
           ) : (
             <div className="flex items-center justify-center h-full text-slate-500">
               Preview not available for this file type.
