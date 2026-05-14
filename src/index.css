@@ -2,4 +2,45 @@
 
 body {
   font-family: 'Inter', sans-serif;
+  background-color: #f7f3ea;
+  color: #0f172a;
+}
+
+/* Global Interactive Styles */
+button, 
+[role="button"],
+.cursor-pointer,
+input[type="submit"],
+input[type="button"],
+label {
+  cursor: pointer !important;
+}
+
+button:active, 
+[role="button"]:active,
+.active-click:active {
+  transform: scale(0.96);
+  transition: transform 0.1s ease;
+}
+
+button, a, .transition-all {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Custom Scrollbar for better aesthetics */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }

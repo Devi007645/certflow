@@ -225,7 +225,7 @@ function App() {
             email: profile.email,
             role: 'user',
             name: profile.name,
-            department: profile.department || 'General',
+            department: profile.department || '',
             certification_keys: profile.certification_keys || [],
           }
         })
@@ -238,7 +238,7 @@ function App() {
             email: profile.email,
             role: 'admin',
             name: profile.name,
-            department: profile.department || 'General',
+            department: profile.department || '',
             certification_keys: profile.certification_keys || [],
           }
         })
@@ -669,7 +669,7 @@ function AuthPanel({ mode, onLogin, onSignup, onSwitchMode }: { mode: 'login' | 
         options: {
           data: {
             name: name,
-            department: 'General',
+            department: '',
             role: role,
           }
         }
@@ -690,7 +690,7 @@ function AuthPanel({ mode, onLogin, onSignup, onSwitchMode }: { mode: 'login' | 
           email,
           role,
           name,
-          department: 'General',
+          department: '',
         }
         const err = await onSignup(newUser)
         if (err) {
@@ -871,7 +871,9 @@ function TeamProgressDashboard({ allCertifications, people, user, onView }: { al
                   </div>
                   <div className="min-w-0">
                     <p className="truncate text-sm font-bold text-slate-900 leading-tight">{person?.name}</p>
-                    <p className="truncate text-[10px] font-bold text-slate-400 uppercase tracking-wider">{person?.department || 'General'}</p>
+                    {person?.department && person.department !== 'General' && (
+                      <p className="truncate text-[10px] font-bold text-slate-400 uppercase tracking-wider">{person.department}</p>
+                    )}
                   </div>
                 </div>
 
@@ -916,7 +918,7 @@ function UserDashboard({ user, certifications, allCertifications, people, onAdd,
         icon={<LayoutDashboard />}
         eyebrow="Employee workspace"
         title={`Welcome back, ${user.name}`}
-        subtitle={`${user.department} · ${user.email}`}
+        subtitle={`${user.department && user.department !== 'General' ? `${user.department} · ` : ''}${user.email}`}
         action={
           <div className="flex items-center gap-3">
             <button onClick={onRefresh} className="inline-flex items-center justify-center h-12 w-12 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 shadow-sm transition" title="Refresh data">
@@ -970,7 +972,7 @@ function AdminDashboard({ admin, certifications, people, query, setQuery, review
         icon={<UsersRound />}
         eyebrow="Admin review center"
         title="Team certification queue"
-        subtitle={`${admin.name} · ${admin.department}`}
+        subtitle={`${admin.name}${admin.department && admin.department !== 'General' ? ` · ${admin.department}` : ''}`}
         action={
           <div className="flex items-center gap-3">
             <button onClick={onRefresh} className="inline-flex items-center justify-center h-12 w-12 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 shadow-sm transition" title="Refresh data">
@@ -1010,7 +1012,7 @@ function AdminDashboard({ admin, certifications, people, query, setQuery, review
                   <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-slate-950 text-white font-bold text-xl">{person?.name?.[0]?.toUpperCase() || '?'}</div>
                   <div>
                     <p className="font-bold text-lg">{person?.name || 'Unknown User'}</p>
-                    <p className="text-sm text-slate-500">{person?.department} · {person?.email}</p>
+                    <p className="text-sm text-slate-500">{person?.department && person.department !== 'General' ? `${person.department} · ` : ''}{person?.email}</p>
                   </div>
                   <span className="ml-auto rounded-full bg-[#3654ff]/10 px-3 py-1 text-xs font-bold text-[#3654ff] border border-[#3654ff]/20">
                     {certs.length} {certs.length === 1 ? 'Entry' : 'Entries'}

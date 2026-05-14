@@ -48,7 +48,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ activeUser, certifications, people })
   }, [messages, isLoading])
 
   const generateContext = () => {
-    if (!activeUser) return "You are a general assistant for Proofly."
+    if (!activeUser) return "You are an assistant for Proofly."
 
     const allPeople = Object.values(people);
     const adminIds = allPeople.filter(p => p.role === 'admin').map(p => p.id);
