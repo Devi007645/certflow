@@ -19,13 +19,24 @@ export const getGeminiResponse = async (
 
   try {
     const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
-      systemInstruction: context,
+      model: 'gemini-pro',
     })
 
+    const chatHistory = [...history]
+    if (context && chatHistory.length === 0) {
+      chatHistory.push({
+        role: 'user',
+        parts: [{ text: `Instructions: ${context}\n\nPlease acknowledge and start the conversation.` }]
+      }, {
+        role: 'model',
+        parts: [{ text: "I understand. I am ready to assist you in the Proofly workspace." }]
+      })
+    }
+
     const chat = model.startChat({
-      history: history.length > 0 ? history : [],
+      history: chatHistory,
     })
+
 
     const result = await chat.sendMessage(prompt)
     const response = await result.response
