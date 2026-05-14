@@ -34,6 +34,8 @@ import { useRealtimeForm } from './hooks/useRealtimeForm'
 import { useCertifications, useCreateCertification, useUpdateCertification, useDeleteCertification } from './queries/useCertifications'
 import { useRealtimeSync } from './hooks/useRealtimeSync'
 import './App.css'
+import ChatBot from './components/ChatBot'
+
 
 type Role = 'user' | 'admin'
 type Screen = 'landing' | 'login' | 'signup' | 'user' | 'admin'
@@ -520,10 +522,13 @@ function App() {
           cert={viewingCert} 
           onClose={() => setViewingCert(null)} 
           allowDownload={activeUser?.role === 'admin' || viewingCert.user_id === activeUser?.id}
+          uploaderName={peopleState[viewingCert.user_id]?.name}
         />
       )}
       {isTransitioning && <LoadingOverlay />}
+      <ChatBot activeUser={activeUser} certifications={certifications} people={peopleState} />
     </main>
+
   )
 }
 
@@ -1605,7 +1610,7 @@ function Modal({ title, icon, children, onClose }: { title: string; icon: ReactN
   )
 }
 
-function DocumentViewer({ cert, onClose, allowDownload }: { cert: Certification; onClose: () => void; allowDownload?: boolean }) {
+function DocumentViewer({ cert, onClose, allowDownload, uploaderName }: { cert: Certification; onClose: () => void; allowDownload?: boolean; uploaderName?: string }) {
   const handleDownload = () => {
     if (!allowDownload) return;
     const link = document.createElement('a');
@@ -1621,7 +1626,12 @@ function DocumentViewer({ cert, onClose, allowDownload }: { cert: Certification;
       <div className="relative w-full max-w-4xl h-[80vh] rounded-[2rem] border border-slate-200 bg-white p-6 shadow-lg flex flex-col">
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <h2 className="text-2xl font-bold">{cert.title}</h2>
+            <div>
+              <h2 className="text-2xl font-bold">{cert.title}</h2>
+              <p className="text-sm font-medium text-slate-500">
+                Uploaded by: <span className="font-bold text-slate-700">{uploaderName || 'Unknown'}</span>
+              </p>
+            </div>
             {allowDownload && cert.file_url && (
               <button 
                 onClick={handleDownload}
@@ -1635,11 +1645,6 @@ function DocumentViewer({ cert, onClose, allowDownload }: { cert: Certification;
           <button onClick={onClose} className="rounded-full bg-white p-2 text-slate-700 hover:bg-slate-950 hover:text-white"><X /></button>
         </div>
         <div className="flex-1 bg-white rounded-2xl overflow-hidden border-2 border-slate-200 relative">
-          {!allowDownload && (
-            <div className="absolute inset-0 z-10 pointer-events-none select-none flex items-center justify-center">
-              <div className="bg-white/10 backdrop-blur-[1px] w-full h-full"></div>
-            </div>
-          )}
           {cert.file_url.startsWith('data:image/') ? (
             <img src={cert.file_url} alt={cert.title} className="w-full h-full object-contain" />
           ) : cert.file_url.startsWith('data:application/pdf') ? (
