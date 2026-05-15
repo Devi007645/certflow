@@ -33,6 +33,8 @@ import {
   Zap,
   Trophy,
   Timer,
+  User,
+  Sparkles
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from './lib/supabase'
