@@ -944,7 +944,6 @@ function TeamProgressDashboard({ allCertifications, people, user, onView }: { al
                           </div>
                           {renderSpecialTags(cert, allCertifications)}
                         </div>
-                        </div>
                         {cert.fileName && (
                           <button
                             onClick={() => onView(cert)}
