@@ -353,7 +353,9 @@ function App() {
 
   const myCertifications = activeUser ? certifications.filter((cert) => cert.user_id === activeUser.id) : []
   const reviewedCount = certifications.filter((cert) => cert.admin_review).length
-  const pendingCount = certifications.length - reviewedCount
+  const toBeReviewedCount = certifications.filter((cert) => !cert.admin_review && cert.fileName).length
+  const inProgressCount = certifications.filter((cert) => !cert.admin_review && !cert.fileName && (!cert.probable_completion_time || new Date(cert.probable_completion_time) >= new Date(new Date().setHours(0,0,0,0)))).length
+  const delayedCount = certifications.filter((cert) => !cert.admin_review && !cert.fileName && cert.probable_completion_time && new Date(cert.probable_completion_time) < new Date(new Date().setHours(0,0,0,0))).length
 
   const filteredCertifications = useMemo(() => {
     const normalized = query.toLowerCase().trim()
@@ -489,9 +491,9 @@ function App() {
 
       <header className={`sticky top-0 z-40 border-b border-slate-900/10 transition-all duration-300 ${isScrolled ? 'bg-[#f7f3ea]/30 backdrop-blur-xl' : 'bg-[#f7f3ea]'}`}>
         <div className={`mx-auto flex max-w-7xl items-center justify-between px-4 transition-all duration-300 ${isScrolled ? 'py-3' : 'py-4'} sm:px-6 lg:px-8`}>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-6">
             <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigateTo('landing')}>
-              <div className="relative">
+              <div className="relative bg-white/40 p-1.5 rounded-xl backdrop-blur-sm group-hover:bg-white/60 transition-colors">
                 <img src={LOGO_BASE64} alt="Proofly Logo" className="h-10 w-auto object-contain transition-transform group-hover:scale-105 mix-blend-multiply" />
                 <div className="absolute -inset-1 bg-blue-400/20 blur-lg rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
@@ -501,29 +503,38 @@ function App() {
             </div>
             <div className="ml-4 flex items-center gap-2 text-xs font-bold">
               {saveStatus === 'saving' && (
-                <span className="rounded-full bg-yellow-100 px-2 py-1 text-yellow-700 border border-yellow-300 flex items-center gap-1">
-                  <UploadCloud className="h-3 w-3 animate-pulse" /> Saving...
+                <span className="rounded-full bg-yellow-50 px-3 py-1.5 text-yellow-600 border border-yellow-100 flex items-center gap-1.5 shadow-sm">
+                  <div className="h-1.5 w-1.5 rounded-full bg-yellow-500 animate-pulse" /> Saving...
                 </span>
               )}
               {saveStatus === 'saved' && (
-                <span className="rounded-full bg-blue-100 px-2 py-1 text-blue-700 border border-blue-300 flex items-center gap-1">
-                  <CheckCircle2 className="h-3 w-3" /> Saved
+                <span className="rounded-full bg-blue-50 px-3 py-1.5 text-[#3654ff] border border-blue-100 flex items-center gap-1.5 shadow-sm">
+                  <div className="h-1.5 w-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" /> Cloud Synced
                 </span>
               )}
               {saveStatus === 'error' && (
-                <span className="rounded-full bg-red-100 px-2 py-1 text-red-700 border border-red-300 flex items-center gap-1">
-                  <X className="h-3 w-3" /> Save Error
+                <span className="rounded-full bg-red-50 px-3 py-1.5 text-red-600 border border-red-100 flex items-center gap-1.5 shadow-sm">
+                  <div className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" /> Sync Error
                 </span>
               )}
             </div>
-          </div>
-          <div className="flex items-center gap-2">
+
             {activeUser && screen !== 'login' && screen !== 'signup' ? (
-              <>
-                <button onClick={() => {
-                  logout();
-                }} className="rounded-full px-4 py-2 text-sm font-bold text-slate-700 hover:bg-white inline-flex" title="Log out">Log out</button>
-              </>
+              <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
+                <div className="flex flex-col items-end">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Session Status</span>
+                  <span className="text-xs font-bold text-green-600 flex items-center gap-1">
+                    <div className="h-1 w-1 rounded-full bg-green-500" /> Active
+                  </span>
+                </div>
+                <button 
+                  onClick={() => logout()} 
+                  className="group flex items-center gap-2 rounded-xl bg-slate-50 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-100 hover:text-red-600 transition-all border border-slate-200"
+                >
+                  <User className="h-4 w-4 text-slate-400 group-hover:text-red-500 transition-colors" />
+                  Log out
+                </button>
+              </div>
             ) : (
               <>
                 <button onClick={() => navigateTo('login')} className="hidden rounded-full px-4 py-2 text-sm font-bold text-slate-700 hover:bg-white sm:inline-flex" title="Log in to your account">Login</button>
@@ -567,8 +578,9 @@ function App() {
               people={peopleState}
               query={query}
               setQuery={setQuery}
-              reviewedCount={certifications.filter(c => c.admin_review).length}
-              pendingCount={certifications.filter(c => !c.admin_review).length}
+              reviewedCount={reviewedCount}
+              toBeReviewedCount={toBeReviewedCount}
+              inProgressCount={inProgressCount}
               onReview={(cert) => {
                 setSelectedCert(cert)
                 setReviewText(activeUser.role === 'admin' ? cert.admin_review : (cert.notes || ''))
@@ -1011,7 +1023,7 @@ function UserDashboard({ user, certifications, allCertifications, people, onAdd,
   )
 }
 
-function AdminDashboard({ admin, certifications, people, query, setQuery, reviewedCount, pendingCount, onReview, onView, onRefresh, isRefreshing }: { admin: Profile; certifications: Certification[]; people: Record<string, Profile>; query: string; setQuery: (value: string) => void; reviewedCount: number; pendingCount: number; onReview: (cert: Certification) => void; onView: (cert: Certification) => void; onRefresh: () => void; isRefreshing: boolean }) {
+function AdminDashboard({ admin, certifications, people, query, setQuery, reviewedCount, toBeReviewedCount, inProgressCount, onReview, onView, onRefresh, isRefreshing }: { admin: Profile; certifications: Certification[]; people: Record<string, Profile>; query: string; setQuery: (value: string) => void; reviewedCount: number; toBeReviewedCount: number; inProgressCount: number; onReview: (cert: Certification) => void; onView: (cert: Certification) => void; onRefresh: () => void; isRefreshing: boolean }) {
   const groupedCerts = useMemo(() => {
     const groups: Record<string, Certification[]> = {}
     certifications.forEach(cert => {
@@ -1033,7 +1045,8 @@ function AdminDashboard({ admin, certifications, people, query, setQuery, review
             <button onClick={onRefresh} className="inline-flex items-center justify-center h-12 w-12 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 shadow-sm transition" title="Refresh data">
               <RefreshCw className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
             </button>
-            <div className="inline-flex items-center gap-2 rounded-xl border border-yellow-200 bg-yellow-50 px-5 py-3 font-bold text-yellow-700"><Bell className="h-5 w-5" /> {pendingCount} pending</div>
+            <div className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-5 py-3 font-bold text-blue-700 shadow-sm"><Sparkles className="h-5 w-5" /> {inProgressCount} in progress</div>
+            <div className="inline-flex items-center gap-2 rounded-xl border border-yellow-200 bg-yellow-50 px-5 py-3 font-bold text-yellow-700 shadow-sm"><Bell className="h-5 w-5" /> {toBeReviewedCount} to be reviewed</div>
           </div>
         }
       />
@@ -1043,8 +1056,8 @@ function AdminDashboard({ admin, certifications, people, query, setQuery, review
         <StatCard icon={<UsersRound />} label="Total Users" value={Object.values(people).filter(p => p.role === 'user').length.toString()} />
         <StatCard
           icon={<Bell />}
-          label="Pending completions"
-          value={certifications.filter(c => c.probable_completion_time && !c.admin_review).length.toString()}
+          label="In Progress"
+          value={inProgressCount.toString()}
         />
       </div>
       <div className="mt-8 rounded-[2rem] border border-[#3654ff]/40 bg-white p-6 shadow-sm">
@@ -1330,7 +1343,7 @@ function StatusPill({ reviewed, delayed }: { reviewed: boolean; delayed?: boolea
       ? 'bg-green-100 text-green-700 border border-green-200'
       : 'bg-yellow-100 text-yellow-700 border border-yellow-200'
       }`}>
-      {reviewed ? 'Reviewed' : 'Pending'}
+      {reviewed ? 'Reviewed' : 'To be reviewed'}
     </span>
   )
 }
