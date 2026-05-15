@@ -30,6 +30,9 @@ import {
   TrendingUp,
   Activity,
   Award,
+  Zap,
+  Trophy,
+  Timer,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from './lib/supabase'
@@ -86,6 +89,73 @@ const formatDate = (dateStr: string | undefined) => {
     return dateStr;
   }
 }
+
+const renderSpecialTags = (cert: Certification, allCertifications: Certification[]) => {
+  const tags: { label: string; color: string; icon?: ReactNode }[] = [];
+  
+  // 1. Trailblazer: First one to complete this specific title in the entire system
+  const sameCerts = allCertifications.filter(c => 
+    c.title.toLowerCase() === cert.title.toLowerCase() && 
+    c.issuing_organization.toLowerCase() === cert.issuing_organization.toLowerCase()
+  );
+  
+  const sortedByCreated = [...sameCerts].sort((a, b) => {
+    const dateA = new Date(a.created_at).getTime();
+    const dateB = new Date(b.created_at).getTime();
+    return dateA - dateB;
+  });
+
+  if (sortedByCreated.length > 0 && sortedByCreated[0].id === cert.id) {
+    tags.push({ 
+      label: 'Trailblazer', 
+      color: 'bg-amber-50 text-amber-600 border-amber-200 shadow-sm',
+      icon: <Zap className="h-3 w-3 mr-1" />
+    });
+  }
+
+  // 2. Fast Learner: If the gap between issue_date (start) and created_at (finish/upload) is small (<= 3 days)
+  if (cert.issue_date && cert.created_at) {
+    const start = new Date(cert.issue_date);
+    const end = new Date(cert.created_at);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays <= 3 && diffDays >= 0) {
+      tags.push({ 
+        label: 'Fast Learner', 
+        color: 'bg-indigo-50 text-indigo-600 border-indigo-200 shadow-sm',
+        icon: <Trophy className="h-3 w-3 mr-1" />
+      });
+    }
+  }
+
+  // 3. Ahead of Schedule: If completed before probable_completion_time
+  if (cert.probable_completion_time && cert.created_at) {
+    const prob = new Date(cert.probable_completion_time);
+    const actual = new Date(cert.created_at);
+    if (actual < prob) {
+      tags.push({
+        label: 'Ahead of Schedule',
+        color: 'bg-emerald-50 text-emerald-600 border-emerald-200 shadow-sm',
+        icon: <Timer className="h-3 w-3 mr-1" />
+      });
+    }
+  }
+
+  return tags.length > 0 ? (
+    <div className="flex flex-wrap gap-1.5 mt-2">
+      {tags.map((tag) => (
+        <span 
+          key={tag.label} 
+          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold border ${tag.color} transition-transform hover:scale-105`}
+        >
+          {tag.icon}
+          {tag.label}
+        </span>
+      ))}
+    </div>
+  ) : null;
+};
 
 const adminUser: Profile = {
   id: 'adm_1Root',
@@ -452,8 +522,7 @@ function App() {
               <>
                 <button onClick={() => {
                   logout();
-                }} className="hidden rounded-full px-4 py-2 text-sm font-bold text-slate-700 hover:bg-white sm:inline-flex" title="Log out">Log out</button>
-                <button onClick={() => navigateTo('signup')} className="rounded-full bg-[#3654ff] px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-[#2541d8] transition" title="Create a new account">Sign up</button>
+                }} className="rounded-full px-4 py-2 text-sm font-bold text-slate-700 hover:bg-white inline-flex" title="Log out">Log out</button>
               </>
             ) : (
               <>
@@ -873,6 +942,8 @@ function TeamProgressDashboard({ allCertifications, people, user, onView }: { al
                             <CalendarDays className="h-3 w-3" />
                             <span>Ends: {formatDate(cert.probable_completion_time)}</span>
                           </div>
+                          {renderSpecialTags(cert, allCertifications)}
+                        </div>
                         </div>
                         {cert.fileName && (
                           <button
@@ -928,7 +999,7 @@ function UserDashboard({ user, certifications, allCertifications, people, onAdd,
         />
       </div>
       <div className={`${isRefreshing ? 'opacity-50 pointer-events-none' : ''} transition-opacity`}>
-        <CertificationGrid certifications={certifications} onView={onView} onUpload={onUpload} onRemove={onRemove} onEdit={onEdit} onDelete={onDelete} />
+        <CertificationGrid certifications={certifications} allCertifications={allCertifications} onView={onView} onUpload={onUpload} onRemove={onRemove} onEdit={onEdit} onDelete={onDelete} />
       </div>
 
       <TeamProgressDashboard
@@ -1009,6 +1080,7 @@ function AdminDashboard({ admin, certifications, people, query, setQuery, review
                       <div>
                         <p className="font-bold">{cert.title}</p>
                         <p className="text-sm text-slate-500">{cert.issuing_organization} · Completion: {formatDate(cert.probable_completion_time)}</p>
+                        {renderSpecialTags(cert, certifications)}
                         {cert.tags && cert.tags.length > 0 && (
                           <div className="mt-1 flex flex-wrap gap-1">
                             {cert.tags.map((tag) => (
@@ -1071,7 +1143,7 @@ function StatCard({ icon, label, value }: { icon: ReactNode; label: string; valu
   )
 }
 
-function CertificationGrid({ certifications, onView, onUpload, onRemove, onEdit, onDelete }: { certifications: Certification[]; onView: (cert: Certification) => void; onUpload: (certId: number, fileName: string, fileData: string) => void; onRemove: (certId: number) => void; onEdit: (cert: Certification) => void; onDelete: (id: number) => void }) {
+function CertificationGrid({ certifications, allCertifications, onView, onUpload, onRemove, onEdit, onDelete }: { certifications: Certification[]; allCertifications: Certification[]; onView: (cert: Certification) => void; onUpload: (certId: number, fileName: string, fileData: string) => void; onRemove: (certId: number) => void; onEdit: (cert: Certification) => void; onDelete: (id: number) => void }) {
 
   const groupedByOrg = useMemo(() => {
     const groups: Record<string, Certification[]> = {}
@@ -1103,6 +1175,7 @@ function CertificationGrid({ certifications, onView, onUpload, onRemove, onEdit,
                     <div>
                       <p className="text-xs font-bold uppercase tracking-wide text-[#3654ff]">{cert.issuing_organization}</p>
                       <p className="font-bold text-lg text-slate-900">{cert.title}</p>
+                      {renderSpecialTags(cert, allCertifications)}
                     </div>
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2">
@@ -1143,6 +1216,7 @@ function CertificationGrid({ certifications, onView, onUpload, onRemove, onEdit,
                         <div>
                           <p className="text-xs font-bold uppercase tracking-wide text-[#3654ff]">{cert.issuing_organization}</p>
                           <h3 className="mt-1 text-xl font-bold text-slate-900">{cert.title}</h3>
+                          {renderSpecialTags(cert, allCertifications)}
                           {/* Tags */}
                           {cert.tags && cert.tags.length > 0 && (
                             <div className="mt-2 flex flex-wrap gap-2">
