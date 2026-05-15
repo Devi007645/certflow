@@ -578,7 +578,7 @@ function App() {
           {screen === 'admin' && activeUser && activeUser.role === 'admin' && (
             <AdminDashboard
               admin={activeUser}
-              certifications={certifications}
+              certifications={filteredCertifications}
               people={peopleState}
               query={query}
               setQuery={setQuery}
@@ -1060,7 +1060,7 @@ function AdminDashboard({ admin, certifications, people, query, setQuery, review
       />
       <div className="mt-8 grid gap-4 md:grid-cols-4">
         <StatCard icon={<FolderOpen />} label="Visible records" value={certifications.length.toString()} />
-        <StatCard icon={<MessageSquareText />} label="Reviews written" value={reviewedCount.toString()} />
+        <StatCard icon={<MessageSquareText />} label="Evaluations Completed" value={reviewedCount.toString()} />
         <StatCard icon={<UsersRound />} label="Total Users" value={Object.values(people).filter(p => p.role === 'user').length.toString()} />
         <StatCard
           icon={<Bell />}
@@ -1076,7 +1076,16 @@ function AdminDashboard({ admin, certifications, people, query, setQuery, review
           </div>
           <div className="relative w-full sm:max-w-md">
             <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search records..." className="w-full rounded-2xl border-2 border-slate-200 bg-[#f8fafc] py-3 pl-12 pr-4 font-bold outline-none focus:border-[#3654ff]" />
+            <input 
+              value={query} 
+              onChange={(event) => setQuery(event.target.value)} 
+              placeholder="Search records..." 
+              className={`w-full rounded-2xl border-2 transition-all duration-300 bg-[#f8fafc] py-3 pl-12 pr-4 font-bold outline-none ${
+                query 
+                  ? 'border-[#3654ff] shadow-[0_0_15px_rgba(54,84,255,0.2)] bg-white' 
+                  : 'border-slate-200 focus:border-[#3654ff]'
+              }`} 
+            />
           </div>
         </div>
         <div className={`grid gap-6 ${isRefreshing ? 'opacity-50 pointer-events-none' : ''} transition-opacity`}>
