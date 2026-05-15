@@ -520,9 +520,11 @@ function App() {
                 </span>
               )}
             </div>
+          </div>
 
+          <div className="flex items-center gap-3">
             {activeUser && screen !== 'login' && screen !== 'signup' ? (
-              <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
+              <div className="flex items-center gap-3">
                 <div className="flex flex-col items-end">
                   <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Session Status</span>
                   <span className="text-xs font-bold text-green-600 flex items-center gap-1">
@@ -538,10 +540,10 @@ function App() {
                 </button>
               </div>
             ) : (
-              <>
+              <div className="flex items-center gap-2">
                 <button onClick={() => navigateTo('login')} className="hidden rounded-full px-4 py-2 text-sm font-bold text-slate-700 hover:bg-white sm:inline-flex" title="Log in to your account">Login</button>
                 <button onClick={() => navigateTo('signup')} className="rounded-full bg-[#3654ff] px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-[#2541d8] transition" title="Create a new account">Sign up</button>
-              </>
+              </div>
             )}
           </div>
         </div>
