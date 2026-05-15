@@ -356,7 +356,7 @@ function App() {
   const myCertifications = activeUser ? certifications.filter((cert) => cert.user_id === activeUser.id) : []
   const reviewedCount = certifications.filter((cert) => cert.admin_review).length
   const toBeReviewedCount = certifications.filter((cert) => !cert.admin_review && cert.fileName).length
-  const inProgressCount = certifications.filter((cert) => !cert.admin_review && !cert.fileName && (!cert.probable_completion_time || new Date(cert.probable_completion_time) >= new Date(new Date().setHours(0,0,0,0)))).length
+  const inProgressCount = certifications.filter((cert) => !cert.admin_review && !cert.fileName).length
   const delayedCount = certifications.filter((cert) => !cert.admin_review && !cert.fileName && cert.probable_completion_time && new Date(cert.probable_completion_time) < new Date(new Date().setHours(0,0,0,0))).length
 
   const filteredCertifications = useMemo(() => {
@@ -585,6 +585,7 @@ function App() {
               reviewedCount={reviewedCount}
               toBeReviewedCount={toBeReviewedCount}
               inProgressCount={inProgressCount}
+              delayedCount={delayedCount}
               onReview={(cert) => {
                 setSelectedCert(cert)
                 setReviewText(activeUser.role === 'admin' ? cert.admin_review : (cert.notes || ''))
@@ -1027,7 +1028,7 @@ function UserDashboard({ user, certifications, allCertifications, people, onAdd,
   )
 }
 
-function AdminDashboard({ admin, certifications, people, query, setQuery, reviewedCount, toBeReviewedCount, inProgressCount, onReview, onView, onRefresh, isRefreshing }: { admin: Profile; certifications: Certification[]; people: Record<string, Profile>; query: string; setQuery: (value: string) => void; reviewedCount: number; toBeReviewedCount: number; inProgressCount: number; onReview: (cert: Certification) => void; onView: (cert: Certification) => void; onRefresh: () => void; isRefreshing: boolean }) {
+function AdminDashboard({ admin, certifications, people, query, setQuery, reviewedCount, toBeReviewedCount, inProgressCount, delayedCount, onReview, onView, onRefresh, isRefreshing }: { admin: Profile; certifications: Certification[]; people: Record<string, Profile>; query: string; setQuery: (value: string) => void; reviewedCount: number; toBeReviewedCount: number; inProgressCount: number; delayedCount: number; onReview: (cert: Certification) => void; onView: (cert: Certification) => void; onRefresh: () => void; isRefreshing: boolean }) {
   const groupedCerts = useMemo(() => {
     const groups: Record<string, Certification[]> = {}
     certifications.forEach(cert => {
@@ -1050,6 +1051,9 @@ function AdminDashboard({ admin, certifications, people, query, setQuery, review
               <RefreshCw className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
             </button>
             <div className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-5 py-3 font-bold text-blue-700 shadow-sm"><Sparkles className="h-5 w-5" /> {inProgressCount} in progress</div>
+            {delayedCount > 0 && (
+              <div className="inline-flex items-center gap-2 rounded-xl border border-yellow-200 bg-yellow-50 px-5 py-3 font-bold text-yellow-700 shadow-sm"><Timer className="h-5 w-5" /> {delayedCount} delayed</div>
+            )}
             <div className="inline-flex items-center gap-2 rounded-xl border border-yellow-200 bg-yellow-50 px-5 py-3 font-bold text-yellow-700 shadow-sm"><Bell className="h-5 w-5" /> {toBeReviewedCount} to be reviewed</div>
           </div>
         }
@@ -1109,13 +1113,22 @@ function AdminDashboard({ admin, certifications, people, query, setQuery, review
                         )}
                       </div>
                       <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-                        <StatusPill reviewed={Boolean(cert.admin_review)} delayed={cert.probable_completion_time ? new Date().toISOString().slice(0, 10) > cert.probable_completion_time : false} />
+                        <StatusPill 
+                          reviewed={Boolean(cert.admin_review)} 
+                          delayed={cert.probable_completion_time ? new Date().toISOString().slice(0, 10) > cert.probable_completion_time : false} 
+                          hasProof={Boolean(cert.fileName)}
+                        />
                         {cert.fileName && (
                           <button onClick={() => onView(cert)} className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-2 text-sm font-bold text-slate-700 border border-slate-200" title="View document">
                             <Eye className="h-4 w-4" /> View
                           </button>
                         )}
-                        <button onClick={() => onReview(cert)} className="rounded-full bg-slate-950 px-4 py-2 text-sm font-bold text-white" title={cert.admin_review ? 'Edit review' : 'Review certificate'}>
+                        <button 
+                          onClick={() => onReview(cert)} 
+                          disabled={!cert.fileName}
+                          className={`rounded-full px-4 py-2 text-sm font-bold text-white transition-all ${!cert.fileName ? 'bg-slate-300 cursor-not-allowed' : 'bg-slate-950 hover:bg-slate-800'}`}
+                          title={!cert.fileName ? 'Proof document required for review' : (cert.admin_review ? 'Edit review' : 'Review certificate')}
+                        >
                           {admin.role === 'admin' ? (cert.admin_review ? 'Edit Review' : 'Review') : 'Add Notes'}
                         </button>
                       </div>
@@ -1248,8 +1261,16 @@ function CertificationGrid({ certifications, allCertifications, onView, onUpload
                       </div>
                       <div className="flex items-center gap-3">
                         {cert.emoji && <span className="text-2xl" title="Admin reaction">{cert.emoji}</span>}
-                        <span className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold bg-[#fffbeb] text-[#b45309]">
-                          Pending
+                        <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold ${
+                          cert.probable_completion_time && new Date().toISOString().slice(0, 10) > cert.probable_completion_time && !cert.fileName
+                            ? 'bg-yellow-50 text-yellow-700 border border-yellow-200'
+                            : !cert.fileName 
+                              ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                              : 'bg-yellow-50 text-yellow-700 border border-yellow-200'
+                        }`}>
+                          {cert.probable_completion_time && new Date().toISOString().slice(0, 10) > cert.probable_completion_time && !cert.fileName 
+                            ? 'Delayed' 
+                            : !cert.fileName ? 'In Progress' : 'To be reviewed'}
                         </span>
                       </div>
                     </div>
@@ -1338,14 +1359,19 @@ function CertificationGrid({ certifications, allCertifications, onView, onUpload
   )
 }
 
-function StatusPill({ reviewed, delayed }: { reviewed: boolean; delayed?: boolean }) {
+function StatusPill({ reviewed, delayed, hasProof }: { reviewed: boolean; delayed?: boolean; hasProof?: boolean }) {
   if (delayed && !reviewed) {
-    return <span className="inline-flex w-fit rounded-full px-3 py-1 text-xs font-bold bg-red-100 text-red-700 border border-red-200">Delayed</span>
+    return <span className="inline-flex w-fit rounded-full px-3 py-1 text-xs font-bold bg-yellow-50 text-yellow-700 border border-yellow-200">Delayed</span>
   }
+  
+  if (!reviewed && !hasProof) {
+    return <span className="inline-flex w-fit rounded-full px-3 py-1 text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">In Progress</span>
+  }
+
   return (
     <span className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-bold ${reviewed
-      ? 'bg-green-100 text-green-700 border border-green-200'
-      : 'bg-yellow-100 text-yellow-700 border border-yellow-200'
+      ? 'bg-green-50 text-green-700 border border-green-200'
+      : 'bg-yellow-50 text-yellow-700 border border-yellow-200'
       }`}>
       {reviewed ? 'Reviewed' : 'To be reviewed'}
     </span>
